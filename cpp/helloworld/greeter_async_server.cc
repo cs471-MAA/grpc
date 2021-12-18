@@ -44,42 +44,6 @@ using helloworld::Greeter;
 using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
-class GreeterClient {
-public:
-    explicit GreeterClient(const std::shared_ptr<grpc::Channel> &channel)
-            : stub_(Greeter::NewStub(channel)) {}
-
-    // Assembles the client's payload, sends it and presents the response back
-    // from the server.
-    std::string SayHello(const std::string &user) {
-        // Data we are sending to the server.
-        HelloRequest request;
-        request.set_name(user);
-
-        // Container for the data we expect from the server.
-        HelloReply reply;
-
-        // Context for the client. It could be used to convey extra information to
-        // the server and/or tweak certain RPC behaviors.
-        grpc::ClientContext context;
-
-        // The actual RPC.
-        Status status = stub_->SayHello(&context, request, &reply);
-
-
-        // Act upon its status.
-        if (status.ok()) {
-            return reply.message();
-        } else {
-            std::cout << status.error_code() << ": " << status.error_message()
-                      << std::endl;
-            return "RPC failed";
-        }
-    }
-
-private:
-    std::unique_ptr<Greeter::Stub> stub_;
-};
 
 // Class encompasing the state and logic needed to serve a request.
 class CallData {
@@ -87,9 +51,9 @@ public:
     // Take in the "service" instance (in this case representing an asynchronous
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
-    CallData(Greeter::AsyncService *service, ServerCompletionQueue *cq, const std::shared_ptr<grpc::Channel>& channel)
-            : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE),
-            channel(channel), greeter(channel) {
+    CallData(Greeter::AsyncService *service, ServerCompletionQueue *cq, const std::shared_ptr<grpc::Channel> &channel,
+             grpc::CompletionQueue *cqClient)
+            : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(channel) {
 
 
         // As part of the initial CREATE state, we *request* that the system
@@ -97,7 +61,6 @@ public:
         // the tag uniquely identifying the request (so that different CallData
         // instances can serve different requests concurrently), in this case
         // the memory address of this CallData instance.
-        status_ = PROCESS;
         service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_,
                                   this);
     }
@@ -109,19 +72,15 @@ public:
 
             // The actual processing.
             std::string prefix("Hello from server1 threadID " + ss.str());
-            std::string bidule = greeter.SayHello("server1");
+            //std::string bidule = greeter.SayHello("server1");
 
-            reply_.set_message(prefix + bidule + " " + request_.name());
+            auto asyncClient = new AsyncGreeterClient(channel, cqClient, this);
+            asyncClient->SayHello(prefix + "async call " + request_.name());
 
-            // And we are done! Let the gRPC runtime know we've finished, using the
-            // memory address of this instance as the uniquely identifying tag for
-            // the event.
-            status_ = FINISH;
-            responder_.Finish(reply_, Status::OK, this);
             // Spawn a new CallData instance to serve new clients while we process
             // the one for this CallData. The instance will deallocate itself as
             // part of its FINISH state.
-            new CallData(service_, cq_, channel);
+            new CallData(service_, cq_, channel, cqClient);
         } else {
             GPR_ASSERT(status_ == FINISH);
             // Once in the FINISH state, deallocate ourselves (CallData).
@@ -129,9 +88,102 @@ public:
         }
     }
 
+    // It's ugly, it should be in a separate file but this is an easy way to avoid cyclic dependency hell
+    class AsyncGreeterClient {
+    public:
+        explicit AsyncGreeterClient(const std::shared_ptr<grpc::Channel> &channel, grpc::CompletionQueue *cq,
+                                    CallData *callData)
+                : stub_(Greeter::NewStub(channel)), cq_(cq), callData_(callData) {}
+
+        // Assembles the client's payload, sends it and presents the response back
+        // from the server.
+        void SayHello(const std::string &user) {
+            // Data we are sending to the server.
+            reply = HelloReply();
+
+            request.set_name(user);
+
+            // You can declare error and stuff
+            status = Status();
+
+
+            // stub_->PrepareAsyncSayHello() creates an RPC object, returning
+            // an instance to store in "call" but does not actually start the RPC
+            // Because we are using the asynchronous API, we need to hold on to
+            // the "call" instance in order to get updates on the ongoing RPC.
+            rpc = (stub_->PrepareAsyncSayHello(&context, request, cq_));
+
+            // StartCall initiates the RPC call
+            rpc->StartCall();
+
+            // Request that, upon completion of the RPC, "reply" be updated with the
+            // server's response; "status" with the indication of whether the operation
+            // was successful.
+            rpc->Finish(&reply, &status, this);
+        }
+
+        // Will be called by the HandleChannel thread because of the cq_ variable this class use is the one that's looped on
+        // in the HandleChannel function
+        void handleCallback() {
+            // Act upon the status of the actual RPC.
+            if (status.ok()) {
+                auto bidule = reply.message();
+                //std::cout << bidule << std::endl;
+                callData_->Finish(bidule);
+            } else {
+                //std::cout << "ass RPC failed" << std::endl;
+                callData_->FinishWithError();
+            }
+
+            delete this;
+        }
+
+    private:
+        // Everything has to be declared as class variable because of pointer magic that will make code from the HandleChannel
+        // thread write stuff in this class in SayHello(user) that was launched by the HandleRPC thread
+
+        // Out of the passed in Channel comes the stub, stored here, our view of the
+        // server's exposed services.
+        std::unique_ptr<Greeter::Stub> stub_;
+        grpc::CompletionQueue *cq_{};
+
+        // Container for the data we expect from the server.
+        HelloReply reply;
+        // Storage for the status of the RPC upon completion.
+        Status status;
+        std::unique_ptr<grpc::ClientAsyncResponseReader<HelloReply>> rpc;
+        HelloRequest request;
+
+        // Context for the client. It could be used to convey extra information to
+        // the server and/or tweak certain RPC behaviors.
+        grpc::ClientContext context;
+
+        // The means to get back to the client.
+        CallData *callData_;
+    };
+
 private:
-    const std::shared_ptr<grpc::Channel>& channel;
-    GreeterClient greeter;
+    void Finish(const std::string &response) {
+        reply_.set_message(response);
+
+        // And we are done! Let the gRPC runtime know we've finished, using the
+        // memory address of this instance as the uniquely identifying tag for
+        // the event.
+        status_ = FINISH;
+        responder_.Finish(reply_, Status::OK, this);
+    }
+
+    void FinishWithError() {
+        // And we are done! Let the gRPC runtime know we've finished, using the
+        // memory address of this instance as the uniquely identifying tag for
+        // the event.
+        status_ = FINISH;
+        responder_.FinishWithError(Status::CANCELLED, this);
+    }
+
+    grpc::CompletionQueue *cqClient;
+
+    const std::shared_ptr<grpc::Channel> &channel;
     // The means of communication with the gRPC runtime for an asynchronous
     // server.
     Greeter::AsyncService *service_;
@@ -152,18 +204,10 @@ private:
 
     // Let's implement a tiny state machine with the following states.
     enum CallStatus {
-        CREATE, PROCESS, FINISH
+        PROCESS, FINISH
     };
     CallStatus status_;  // The current serving state.
 };
-
-
-
-
-
-
-
-
 
 
 class ServerImpl final {
@@ -204,10 +248,14 @@ private:
 
     // This can be run in multiple threads if needed.
     void HandleRpcs(ServerCompletionQueue *cq) {
-        std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel("localhost:50052", grpc::InsecureChannelCredentials());
+        std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel("localhost:50052",
+                                                                     grpc::InsecureChannelCredentials());
+
+        auto cqClient = new grpc::CompletionQueue();
+        std::thread threadClient = std::thread(&ServerImpl::HandleChannel, cqClient);
 
         // Spawn a new CallData instance to serve new clients.
-        new CallData(&service_, cq, channel);
+        new CallData(&service_, cq, channel, cqClient);
         void *tag;  // uniquely identifies a request.
         bool ok;
         while (true) {
@@ -219,6 +267,21 @@ private:
             GPR_ASSERT(cq->Next(&tag, &ok));
             GPR_ASSERT(ok);
             static_cast<CallData *>(tag)->Proceed();
+        }
+    }
+
+    static void HandleChannel(grpc::CompletionQueue *cq) {
+        void *tag;  // uniquely identifies a request.
+        bool ok;
+        while (true) {
+            // Block waiting to read the next event from the completion queue. The
+            // event is uniquely identified by its tag, which in this case is the
+            // memory address of a CallData instance.
+            // The return value of Next should always be checked. This return value
+            // tells us whether there is any kind of event or cq_ is shutting down.
+            GPR_ASSERT(cq->Next(&tag, &ok));
+            GPR_ASSERT(ok);
+            static_cast<CallData::AsyncGreeterClient *>(tag)->handleCallback();
         }
     }
 
