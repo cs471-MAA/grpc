@@ -11,12 +11,12 @@ using grpc::ServerAsyncResponseWriter;
 using grpc::Status;
 
 // Break circular dependency
-class asyncSanitizeMessageHandler;
+class asyncSendMessageHandler;
 
 class sanitizeMessage_asyncClient : public asyncHandler {
 public:
     explicit sanitizeMessage_asyncClient(const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq,
-                                         asyncSanitizeMessageHandler *callData);
+                                         asyncSendMessageHandler *callData);
 
     // Assembles the client's payload, sends it and presents the response back
     // from the server.
@@ -47,20 +47,20 @@ private:
     grpc::ClientContext context;
 
     // The means to get back to the client.
-    asyncSanitizeMessageHandler *callData_;
+    asyncSendMessageHandler *callData_;
 };
 
 
 // Class encompasing the state and logic needed to serve a request.
-class asyncSanitizeMessageHandler : public asyncHandler {
+class asyncSendMessageHandler : public asyncHandler {
 public:
     friend class sanitizeMessage_asyncClient;
     /** Take in the "service" instance (in this case representing an asynchronous
     * server) and the completion queue "cq" used for asynchronous communication
     * with the gRPC runtime.
      */
-    asyncSanitizeMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                                std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient);
+    asyncSendMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
+                            std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient);
 
     void Proceed(bool ok) override;
 

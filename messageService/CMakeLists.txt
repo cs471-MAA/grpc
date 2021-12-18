@@ -1,7 +1,7 @@
 
-add_executable(messageServiceAsync messageService/asyncFindLastMessageHandler.h messageService/asyncSanitizeMessageHandler.h
-        messageService/messageService.h messageService/asyncFindLastMessageHandler.cc
-        messageService/asyncSanitizeMessageHandler.cc messageService/messageService.cc)
+add_executable(messageServiceAsync messageService/asyncFindLastMessageHandler.h messageService/asyncSendMessageHandler.h
+        messageService/messageServiceAsync.h messageService/asyncFindLastMessageHandler.cc
+        messageService/asyncSendMessageHandler.cc messageService/messageServiceAsync.cc)
 target_link_libraries(messageServiceAsync
         hw_grpc_proto
         ${_REFLECTION}

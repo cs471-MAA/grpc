@@ -1,7 +1,7 @@
 #include <thread>
 #include "messageServiceAsync.h"
 #include "asyncFindLastMessageHandler.h"
-#include "asyncSanitizeMessageHandler.h"
+#include "asyncSendMessageHandler.h"
 
 messageServiceAsyncImpl::~messageServiceAsyncImpl() {
     server_->Shutdown();
@@ -43,6 +43,7 @@ void messageServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
 
     // Spawn a new CallData instance to serve new clients.
     new asyncFindLastMessageHandler(&service_, cq, channel, cqClient);
+    new asyncSendMessageHandler(&service_, cq, channel, cqClient);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {

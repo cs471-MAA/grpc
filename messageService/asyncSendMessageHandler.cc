@@ -1,12 +1,12 @@
 #include <thread>
 #include <sstream>
-#include "asyncSanitizeMessageHandler.h"
+#include "asyncSendMessageHandler.h"
 
 using grpc::Status;
 
 
 sanitizeMessage_asyncClient::sanitizeMessage_asyncClient(
-        const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq, asyncSanitizeMessageHandler *callData)
+        const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq, asyncSendMessageHandler *callData)
         : stub_(mmb::sanitizationService::NewStub(channel)), cq_(cq), callData_(callData) {}
 
 // Assembles the client's payload, sends it and presents the response back
@@ -51,8 +51,8 @@ void sanitizeMessage_asyncClient::Proceed(bool ok) {
 
 // ###############################################
 
-asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                                                         std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient)
+asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
+                                                 std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)) {
 
     // As part of the initial CREATE state, we *request* that the system
@@ -64,7 +64,7 @@ asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(messageService::AsyncSe
                                      this);
 }
 
-void asyncSanitizeMessageHandler::Proceed(bool ok) {
+void asyncSendMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
         std::stringstream ss;
         ss << std::this_thread::get_id();
@@ -79,7 +79,7 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new asyncSanitizeMessageHandler(service_, cq_, channel, cqClient);
+        new asyncSendMessageHandler(service_, cq_, channel, cqClient);
     } else {
         GPR_ASSERT(status_ == FINISH);
         // Once in the FINISH state, deallocate ourselves (CallData).
@@ -87,7 +87,7 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
     }
 }
 
-void asyncSanitizeMessageHandler::Finish(const saveMessageReply &reply) {
+void asyncSendMessageHandler::Finish(const saveMessageReply &reply) {
 
     // And we are done! Let the gRPC runtime know we've finished, using the
     // memory address of this instance as the uniquely identifying tag for
@@ -97,7 +97,7 @@ void asyncSanitizeMessageHandler::Finish(const saveMessageReply &reply) {
     responder_.Finish(reply, Status::OK, this);
 }
 
-void asyncSanitizeMessageHandler::FinishWithError() {
+void asyncSendMessageHandler::FinishWithError() {
     // And we are done! Let the gRPC runtime know we've finished, using the
     // memory address of this instance as the uniquely identifying tag for
     // the event.
