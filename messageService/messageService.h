@@ -64,8 +64,6 @@ private:
     ServerAsyncResponseWriter<findLastMessageReply> responder_;
 
     // Let's implement a tiny state machine with the following states.
-    enum CallStatus {
-        PROCESS, FINISH
-    };
-    CallStatus status_;  // The current serving state.
+    enum CallStatus {PROCESS, FINISH};
+    std::atomic<CallStatus> status_;  // The current serving state.
 };
