@@ -17,7 +17,6 @@ RUN cd /grpc \
     && cd cmake/build \
     && cmake -DgRPC_INSTALL=ON \
       -DgRPC_BUILD_TESTS=OFF \
-      --config Release \
       ../.. \
     && make -j 4 \
     && make install

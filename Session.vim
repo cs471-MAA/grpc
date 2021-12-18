@@ -89,12 +89,12 @@ setlocal fdn=20
 setlocal nofen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 22 - ((14 * winheight(0) + 9) / 18)
+let s:l = 20 - ((12 * winheight(0) + 9) / 18)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 22
-normal! 018|
+keepjumps 20
+normal! 013|
 wincmd w
 argglobal
 if bufexists("term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh") | buffer term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh | else | edit term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh | endif
@@ -110,12 +110,12 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal nofen
-let s:l = 10028 - ((27 * winheight(0) + 14) / 28)
+let s:l = 10000 - ((8 * winheight(0) + 14) / 28)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 10028
-normal! 038|
+keepjumps 10000
+normal! 072|
 wincmd w
 4wincmd w
 exe 'vert 1resize ' . ((&columns * 21 + 119) / 239)
