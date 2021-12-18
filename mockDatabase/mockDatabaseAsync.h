@@ -19,7 +19,6 @@ public:
     void Run();
 
 private:
-
     // This can be run in multiple threads if needed.
     void HandleRpcs();
 

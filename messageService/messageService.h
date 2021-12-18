@@ -1,69 +1,28 @@
-#include <iostream>
-#include <memory>
-#include <string>
-#include <thread>
-
-#include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
-#include <sstream>
-#include <utility>
-
 #include "mock_message_board.grpc.pb.h"
 
-
-using grpc::Server;
-using grpc::ServerAsyncResponseWriter;
-using grpc::ServerBuilder;
 using grpc::ServerCompletionQueue;
-using grpc::ServerContext;
-using grpc::Status;
-using mmb::messageService;
-using mmb::findLastMessageRequest;
-using mmb::findLastMessageReply;
-using mmb::saveMessageRequest;
-using mmb::saveMessageReply;
+using grpc::CompletionQueue;
+using grpc::Server;
+using mmb::mockDatabase;
 
-
-// Class encompasing the state and logic needed to serve a request.
-class CallData {
+class messageServiceAsyncImpl final {
 public:
-    friend class M_asyncClient;
-    /** Take in the "service" instance (in this case representing an asynchronous
-    * server) and the completion queue "cq" used for asynchronous communication
-    * with the gRPC runtime.
-     */
-    CallData(messageService::AsyncService *service, ServerCompletionQueue *cq, std::shared_ptr<grpc::Channel>  channel,
-             grpc::CompletionQueue *cqClient);
+    messageServiceAsyncImpl() = default;
+    ~messageServiceAsyncImpl();
 
-    void Proceed();
+    // There is no shutdown handling in this code.
+    void Run();
 
 private:
-    void Finish(const std::string &response);
 
-    void FinishWithError();
+    // This can be run in multiple threads if needed.
+    void HandleRpcs(ServerCompletionQueue *cq);
 
-    grpc::CompletionQueue *cqClient;
+    static void HandleChannel(CompletionQueue *cq);
 
-    const std::shared_ptr<grpc::Channel> channel;
-    // The means of communication with the gRPC runtime for an asynchronous
-    // server.
-    messageService::AsyncService *service_;
-    // The producer-consumer queue where for asynchronous server notifications.
-    ServerCompletionQueue *cq_;
-    // Context for the rpc, allowing to tweak aspects of it such as the use
-    // of compression, authentication, as well as to send metadata back to the
-    // client.
-    ServerContext ctx_;
-
-    // What we get from the client.
-    findLastMessageRequest request_;
-    // What we send back to the client.
-    findLastMessageReply reply_;
-
-    // The means to get back to the client.
-    ServerAsyncResponseWriter<findLastMessageReply> responder_;
-
-    // Let's implement a tiny state machine with the following states.
-    enum CallStatus {PROCESS, FINISH};
-    std::atomic<CallStatus> status_;  // The current serving state.
+    std::unique_ptr<ServerCompletionQueue> cq_;
+    std::unique_ptr<ServerCompletionQueue> cq2_;
+    mmb::messageService::AsyncService service_;
+    std::unique_ptr<Server> server_;
 };
