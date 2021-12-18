@@ -1,10 +1,12 @@
 
 
 #include "messageService.h"
+#include "asyncClient.h"
+#include <utility>
 
 CallData::CallData(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                   const std::shared_ptr<grpc::Channel> &channel, grpc::CompletionQueue *cqClient)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(channel) {
+                   std::shared_ptr<grpc::Channel>  channel, grpc::CompletionQueue *cqClient)
+        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)) {
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
@@ -71,7 +73,7 @@ public:
 
     // There is no shutdown handling in this code.
     void Run() {
-        std::string server_address("0.0.0.0:50051");
+        std::string server_address("0.0.0.0:50052");
 
         ServerBuilder builder;
         // Listen on the given address without any authentication mechanism.
@@ -98,7 +100,7 @@ private:
 
     // This can be run in multiple threads if needed.
     void HandleRpcs(ServerCompletionQueue *cq) {
-        std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel("localhost:50052",
+        std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel("localhost:50051",
                                                                      grpc::InsecureChannelCredentials());
 
         auto cqClient = new grpc::CompletionQueue();

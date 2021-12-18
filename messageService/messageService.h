@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "mock_message_board.grpc.pb.h"
-#include "asyncClient.h"
+
 
 using grpc::Server;
 using grpc::ServerAsyncResponseWriter;
@@ -32,7 +32,7 @@ public:
     * server) and the completion queue "cq" used for asynchronous communication
     * with the gRPC runtime.
      */
-    CallData(messageService::AsyncService *service, ServerCompletionQueue *cq, const std::shared_ptr<grpc::Channel> &channel,
+    CallData(messageService::AsyncService *service, ServerCompletionQueue *cq, std::shared_ptr<grpc::Channel>  channel,
              grpc::CompletionQueue *cqClient);
 
     void Proceed();
@@ -44,7 +44,7 @@ private:
 
     grpc::CompletionQueue *cqClient;
 
-    const std::shared_ptr<grpc::Channel> &channel;
+    const std::shared_ptr<grpc::Channel> channel;
     // The means of communication with the gRPC runtime for an asynchronous
     // server.
     messageService::AsyncService *service_;

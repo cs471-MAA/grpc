@@ -14,7 +14,7 @@ service sanitizationService {
 
 service mockDatabase {
   rpc findLastMessage (findLastMessageRequest) returns (findLastMessageReply);
-  rpc saveMessage (saveMessageRequest) returns (saveMessageRequest);
+  rpc saveMessage (saveMessageRequest) returns (saveMessageReply);
 }
 
 message saveMessageRequest {

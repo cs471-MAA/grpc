@@ -3,8 +3,9 @@
 //
 
 #include "asyncClient.h"
+#include "messageService.h"
 
-M_asyncClient::M_asyncClient(const std::shared_ptr<grpc::Channel> &channel, grpc::CompletionQueue *cq,
+M_asyncClient::M_asyncClient(const std::shared_ptr<grpc::Channel>& channel, grpc::CompletionQueue *cq,
                              CallData *callData)
                              : stub_(mockDatabase::NewStub(channel)), cq_(cq), callData_(callData) {}
 
@@ -48,3 +49,4 @@ void M_asyncClient::handleCallback() {
 
     delete this;
 }
+

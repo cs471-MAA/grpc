@@ -1,5 +1,3 @@
-#pragma once
-
 #include <iostream>
 #include <memory>
 #include <string>
@@ -11,7 +9,6 @@
 #include <utility>
 
 #include "mock_message_board.grpc.pb.h"
-#include "messageService.h"
 
 using grpc::Server;
 using grpc::ServerAsyncResponseWriter;
@@ -26,12 +23,15 @@ using mmb::findLastMessageReply;
 using mmb::saveMessageRequest;
 using mmb::saveMessageReply;
 
+// Break circular dependency
+class CallData;
+
 class M_asyncClient {
 public:
-    explicit M_asyncClient(const std::shared_ptr<grpc::Channel> &channel, grpc::CompletionQueue *cq,
+    explicit M_asyncClient(const std::shared_ptr<grpc::Channel>& channel, grpc::CompletionQueue *cq,
                                 CallData *callData);
 
-    // Assembles the client's payload, sends it and presents the response back
+// Assembles the client's payload, sends it and presents the response back
     // from the server.
     void findLastMessage(const std::string &cliend_id);
 

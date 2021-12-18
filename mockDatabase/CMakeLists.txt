@@ -1,7 +1,7 @@
 # Targets greeter_[async_](client|server)
 foreach(_target
         mockDatabase)
-    add_executable(${_target} mockDatabase/${_target}.cc)
+    add_executable(${_target} mockDatabase/${_target}.h mockDatabase/${_target}.cc)
     target_link_libraries(${_target}
             hw_grpc_proto
             ${_REFLECTION}
