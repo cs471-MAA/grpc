@@ -13,6 +13,7 @@
 
 #include "mock_message_board.grpc.pb.h"
 #include "mockDatabase.h"
+#include "../shared/thread_pool.h"
 
 mockDatabaseSyncImpl::mockDatabaseSyncImpl() {
 
@@ -67,6 +68,9 @@ public:
         cq_->Shutdown();
     }
 
+    explicit ServerAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::milliseconds waiting_time)
+    : threadPool(workerThreads), waiting_time(waiting_time){}
+
     // There is no shutdown handling in this code.
     void Run() {
         std::string server_address("0.0.0.0:50051");
@@ -95,17 +99,17 @@ private:
         // Take in the "service" instance (in this case representing an asynchronous
         // server) and the completion queue "cq" used for asynchronous communication
         // with the gRPC runtime.
-        CallData(mockDatabase::AsyncService* service, ServerCompletionQueue* cq)
-                : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
+        CallData(mockDatabase::AsyncService* service, ServerCompletionQueue* cq, thread_pool &threadPool, std::chrono::milliseconds waiting_time)
+                : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), threadPool(threadPool),
+                waiting_time(waiting_time){
 
             // As part of the initial CREATE state, we *request* that the system
             // start processing SayHello requests. In this request, "this" acts are
             // the tag uniquely identifying the request (so that different CallData
             // instances can serve different requests concurrently), in this case
             // the memory address of this CallData instance.
-            status_ = PROCESS;
-            service_->RequestfindLastMessage(&ctx_, &request_, &responder_, cq_, cq_,
-                                      this);
+            service_->RequestfindLastMessage(&ctx_, &request_, &responder_, cq_,
+                                             cq_,this);
         }
 
         void Proceed() {
@@ -115,21 +119,24 @@ private:
                 std::string prefix("Hello from server2 ");
                 reply_.set_message(prefix + request_.client_id());
 
-                // And we are done! Let the gRPC runtime know we've finished, using the
-                // memory address of this instance as the uniquely identifying tag for
-                // the event.
-                status_ = FINISH;
-                responder_.Finish(reply_, Status::OK, this);
+                threadPool.push_task([&] (){
+                    std::this_thread::sleep_for(waiting_time);
+                    status_ = FINISH;
+                    responder_.Finish(reply_, Status::OK, this);
+                });
+
                 // Spawn a new CallData instance to serve new clients while we process
                 // the one for this CallData. The instance will deallocate itself as
                 // part of its FINISH state.
-                new CallData(service_, cq_);
+                new CallData(service_, cq_, threadPool, waiting_time);
             } else {
                 GPR_ASSERT(status_ == FINISH);
                 // Once in the FINISH state, deallocate ourselves (CallData).
                 delete this;
             }
         }
+
+
 
     private:
 
@@ -152,14 +159,17 @@ private:
         ServerAsyncResponseWriter<findLastMessageReply> responder_;
 
         // Let's implement a tiny state machine with the following states.
-        enum CallStatus { CREATE, PROCESS, FINISH };
-        CallStatus status_;  // The current serving state.
+        enum CallStatus { PROCESS, FINISH };
+        std::atomic<CallStatus> status_; // The current serving state.
+
+        thread_pool& threadPool;
+        std::chrono::milliseconds waiting_time;
     };
 
     // This can be run in multiple threads if needed.
     void HandleRpcs() {
         // Spawn a new CallData instance to serve new clients.
-        new CallData(&service_, cq_.get());
+        new CallData(&service_, cq_.get(), threadPool, waiting_time);
         void* tag;  // uniquely identifies a request.
         bool ok;
         while (true) {
@@ -177,12 +187,17 @@ private:
     std::unique_ptr<ServerCompletionQueue> cq_;
     mockDatabase::AsyncService service_;
     std::unique_ptr<Server> server_;
+    thread_pool threadPool;
+    std::chrono::milliseconds waiting_time;
 };
 
 
 
 int main(int argc, char** argv) {
-    ServerAsyncImpl server;
+    unsigned long workerThreads = 10;
+    std::chrono::milliseconds waitingTime(100);
+
+    ServerAsyncImpl server(workerThreads, waitingTime);
     server.Run();
 
     return 0;
