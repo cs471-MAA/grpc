@@ -51,7 +51,7 @@ class GreeterClient {
     request.set_name(user);
 
     // Call object to store rpc data
-    AsyncClientCall* call = new AsyncClientCall;
+    auto* call = new AsyncClientCall;
 
     // stub_->PrepareAsyncSayHello() creates an RPC object, returning
     // an instance to store in "call" but does not actually start the RPC
@@ -79,7 +79,7 @@ class GreeterClient {
     // Block until the next result is available in the completion queue "cq".
     while (cq_.Next(&got_tag, &ok)) {
       // The tag in this example is the memory location of the call object
-      AsyncClientCall* call = static_cast<AsyncClientCall*>(got_tag);
+      auto* call = static_cast<AsyncClientCall*>(got_tag);
 
       // Verify that the request was completed successfully. Note that "ok"
       // corresponds solely to the request for updates introduced by Finish().
@@ -92,7 +92,6 @@ class GreeterClient {
 
       // Once we're complete, deallocate the call object.
       delete call;
-      //SayHello("bite");
     }
   }
 
