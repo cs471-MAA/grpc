@@ -24,7 +24,7 @@ project(HelloWorld C CXX)
 include(../cmake/common.cmake)
 
 # Proto file
-get_filename_component(hw_proto "../../protos/helloworld.proto" ABSOLUTE)
+get_filename_component(hw_proto "../protos/helloworld.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 # Generated sources

@@ -2,16 +2,16 @@ syntax = "proto3";
 
 package mock_message_board;
 
-service MessageService {
+service messageService {
   rpc findLastMessage (findLastMessageRequest) returns (findLastMessageReply);
   rpc sendMessage (saveMessageRequest) returns (saveMessageReply);
 }
 
-service SanitizationService {
+service sanitizationService {
   rpc sanitize_message (saveMessageRequest) returns (saveMessageReply);
 }
 
-service MockDatabase {
+service mockDatabase {
   rpc findLastMessage (findLastMessageRequest) returns (findLastMessageReply);
   rpc saveMessage (saveMessageRequest) returns (saveMessageRequest);
 }
