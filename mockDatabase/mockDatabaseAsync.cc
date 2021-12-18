@@ -3,7 +3,7 @@
 //
 
 #include "mockDatabaseAsync.h"
-#include "asyncHandler.h"
+#include "../shared/asyncHandler.h"
 #include "asyncSaveMessageHandler.h"
 #include "asyncFindLastMessageHandler.h"
 using grpc::ServerBuilder;
