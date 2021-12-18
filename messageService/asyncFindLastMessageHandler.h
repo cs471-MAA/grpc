@@ -24,7 +24,7 @@ public:
 
     // Will be called by the HandleChannel thread because of the cq_ variable this class use is the one that's looped on
     // in the HandleChannel function
-    void Proceed(bool ok);
+    void Proceed(bool ok) override;
 
 private:
     // Everything has to be declared as class variable because of pointer magic that will make code from the HandleChannel
@@ -65,7 +65,7 @@ public:
     void Proceed(bool ok) override;
 
 private:
-    void Finish(const std::string &response);
+    void Finish(findLastMessageReply &reply);
 
     void FinishWithError();
 
@@ -84,8 +84,6 @@ private:
 
     // What we get from the client.
     findLastMessageRequest request_;
-    // What we send back to the client.
-    findLastMessageReply reply_;
 
     // The means to get back to the client.
     ServerAsyncResponseWriter<findLastMessageReply> responder_;

@@ -39,9 +39,8 @@ void findLastMessage_asyncClient::findLastMessage(const std::string &cliend_id) 
 void findLastMessage_asyncClient::Proceed(bool ok) {
     // Act upon the status of the actual RPC.
     if (status.ok()) {
-        auto bidule = reply.message();
         //std::cout << bidule << std::endl;
-        callData_->Finish(bidule);
+        callData_->Finish(reply);
     } else {
         //std::cout << "ass RPC failed" << std::endl;
         callData_->FinishWithError();
@@ -88,15 +87,13 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
     }
 }
 
-void asyncFindLastMessageHandler::Finish(const std::string &response) {
-    reply_.set_message(response);
-
+void asyncFindLastMessageHandler::Finish(findLastMessageReply &reply) {
     // And we are done! Let the gRPC runtime know we've finished, using the
     // memory address of this instance as the uniquely identifying tag for
     // the event.
     status_ = FINISH;
     // Thread safe
-    responder_.Finish(reply_, Status::OK, this);
+    responder_.Finish(reply, Status::OK, this);
 }
 
 void asyncFindLastMessageHandler::FinishWithError() {

@@ -1,5 +1,5 @@
 #include <thread>
-#include "messageService.h"
+#include "messageServiceAsync.h"
 #include "asyncFindLastMessageHandler.h"
 #include "asyncSanitizeMessageHandler.h"
 
