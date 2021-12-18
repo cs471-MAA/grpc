@@ -140,7 +140,7 @@ public:
 
     private:
         // Everything has to be declared as class variable because of pointer magic that will make code from the HandleChannel
-        // thread write stuff in this class in SayHello(user) that was launched by the HandleRPC thread
+        // thread write stuff in this class (with handleCallback()) that was created by the HandleRPC thread
 
         // Out of the passed in Channel comes the stub, stored here, our view of the
         // server's exposed services.
