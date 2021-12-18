@@ -3,9 +3,11 @@
 
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/thread_pool.h"
+#include "asyncHandler.h"
 
 using grpc::Status;
 using grpc::ServerAsyncResponseWriter;
+using grpc::ServerCompletionQueue;
 using grpc::ServerContext;
 using mmb::mockDatabase;
 using mmb::findLastMessageRequest;
@@ -14,14 +16,15 @@ using mmb::saveMessageRequest;
 using mmb::saveMessageReply;
 
 // Class encompasing the state and logic needed to serve a request.
-class asyncRequestHandler {
+class asyncFindLastMessageHandler : public asyncHandler {
 public:
     // Take in the "service" instance (in this case representing an asynchronous
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
-    asyncRequestHandler(mockDatabase::AsyncService* service, ServerCompletionQueue* cq, thread_pool &threadPool, std::chrono::milliseconds waiting_time)
+    asyncFindLastMessageHandler(mockDatabase::AsyncService* service, ServerCompletionQueue* cq, thread_pool &threadPool,
+                                std::chrono::milliseconds waiting_time, CTSL::HashMap<std::string, std::string> &hashMap)
             : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), threadPool(threadPool),
-              waiting_time(waiting_time){
+              waiting_time(waiting_time), hashMap(hashMap){
 
         // As part of the initial CREATE state, we *request* that the system
         // start processing SayHello requests. In this request, "this" acts are
@@ -32,24 +35,30 @@ public:
                                          cq_,this);
     }
 
-    void Proceed() {
+    void Proceed(bool ok) override {
         if (status_ == PROCESS) {
-
-            // The actual processing.
-            std::string prefix("Hello from server2 ");
-            reply_.set_message(prefix + request_.client_id());
 
             // Push the request into a worker thread pool just like a real DB would do
             threadPool.push_task([&] (){
-                std::this_thread::sleep_for(waiting_time);
+
+                // The actual processing.
+                reply_.set_query_uid(request_.query_uid());
+                std::string result;
+                if(hashMap.find(request_.client_id(), result)){
+                    reply_.set_message( result);
+                }else{
+                    reply_.set_message( "Client ID not found");
+                }
+
                 status_ = FINISH;
+                std::this_thread::sleep_for(waiting_time);
                 responder_.Finish(reply_, Status::OK, this);
             });
 
             // Spawn a new CallData instance to serve new clients while we process
             // the one for this CallData. The instance will deallocate itself as
             // part of its FINISH state.
-            new asyncRequestHandler(service_, cq_, threadPool, waiting_time);
+            new asyncFindLastMessageHandler(service_, cq_, threadPool, waiting_time, hashMap);
         } else {
             GPR_ASSERT(status_ == FINISH);
             // Once in the FINISH state, deallocate ourselves (CallData).
@@ -82,4 +91,5 @@ private:
 
     thread_pool& threadPool;
     std::chrono::milliseconds waiting_time;
+    CTSL::HashMap<std::string, std::string> &hashMap;
 };

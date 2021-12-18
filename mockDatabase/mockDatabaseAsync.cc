@@ -3,7 +3,9 @@
 //
 
 #include "mockDatabaseAsync.h"
-#include "asyncRequestHandler.h"
+#include "asyncHandler.h"
+#include "asyncSaveMessageHandler.h"
+#include "asyncFindLastMessageHandler.h"
 using grpc::ServerBuilder;
 
 
@@ -38,7 +40,8 @@ void ServerAsyncImpl::Run() {
 
 void ServerAsyncImpl::HandleRpcs() {
     // Spawn a new CallData instance to serve new clients.
-    new asyncRequestHandler(&service_, cq_.get(), threadPool, waiting_time);
+    new asyncFindLastMessageHandler(&service_, cq_.get(), threadPool, waiting_time, hashMap);
+    new asyncSaveMessageHandler(&service_, cq_.get(), threadPool, waiting_time, hashMap);
     void* tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -49,7 +52,7 @@ void ServerAsyncImpl::HandleRpcs() {
         // tells us whether there is any kind of event or cq_ is shutting down.
         GPR_ASSERT(cq_->Next(&tag, &ok));
         GPR_ASSERT(ok);
-        static_cast<asyncRequestHandler*>(tag)->Proceed();
+        static_cast<asyncHandler*>(tag)->Proceed(ok);
     }
 }
 
