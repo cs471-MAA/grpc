@@ -50,10 +50,13 @@ void AsyncClient::AsyncCompleteRpc() {
         // corresponds solely to the request for updates introduced by Finish().
         GPR_ASSERT(ok);
 
-        if (call->status.ok())
+        if (call->status.ok()){
             std::cout << "Greeter received: " << call->reply.message() << " " << std::this_thread::get_id() << std::endl;
-        else
+        }
+        else{
             std::cout << "RPC failed" << std::endl;
+            std::cout << call->status.error_details() << std::endl;
+        }
 
         // Once we're complete, deallocate the call object.
         delete call;
@@ -66,7 +69,7 @@ int main(int argc, char** argv) {
   // localhost at port 50051). We indicate that the channel isn't authenticated
   // (use of InsecureChannelCredentials()).
   AsyncClient client(grpc::CreateChannel(
-      "localhost:50051", grpc::InsecureChannelCredentials()));
+      "localhost:50052", grpc::InsecureChannelCredentials()));
 
   // Spawn reader thread that loops indefinitely
   // only calls findmessage atm

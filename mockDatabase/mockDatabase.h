@@ -21,10 +21,10 @@ using mmb::saveMessageRequest;
 using mmb::saveMessageReply;
 
 // Logic and data behind the server's behavior.
-class mockDatabaseImpl final : public mockDatabase::Service {
+class mockDatabaseSyncImpl final : public mockDatabase::Service {
 public:
-    mockDatabaseImpl();
-    ~mockDatabaseImpl() override;
+    mockDatabaseSyncImpl();
+    ~mockDatabaseSyncImpl() override;
     Status findLastMessage(::grpc::ServerContext* context, const ::mmb::findLastMessageRequest* request, ::mmb::findLastMessageReply* response) override;
     Status saveMessage(::grpc::ServerContext* context, const ::mmb::saveMessageRequest* request, ::mmb::saveMessageReply* response) override;
 

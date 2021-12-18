@@ -49,4 +49,3 @@ void M_asyncClient::handleCallback() {
 
     delete this;
 }
-
