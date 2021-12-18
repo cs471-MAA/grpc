@@ -170,6 +170,7 @@ private:
         // memory address of this instance as the uniquely identifying tag for
         // the event.
         status_ = FINISH;
+        // Thread safe
         responder_.Finish(reply_, Status::OK, this);
     }
 
@@ -178,6 +179,7 @@ private:
         // memory address of this instance as the uniquely identifying tag for
         // the event.
         status_ = FINISH;
+        // Thread safe
         responder_.FinishWithError(Status::CANCELLED, this);
     }
 
