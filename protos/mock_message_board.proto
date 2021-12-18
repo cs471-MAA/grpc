@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-package mock_message_board;
+// Mock Message Board
+package mmb;
 
 service messageService {
   rpc findLastMessage (findLastMessageRequest) returns (findLastMessageReply);

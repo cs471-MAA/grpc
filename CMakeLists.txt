@@ -19,19 +19,19 @@
 
 cmake_minimum_required(VERSION 3.5.1)
 
-project(HelloWorld C CXX)
+project(RPC_tests C CXX)
 
-include(../cmake/common.cmake)
+include(common.cmake)
 
 # Proto file
-get_filename_component(hw_proto "../protos/helloworld.proto" ABSOLUTE)
+get_filename_component(hw_proto "protos/mock_message_board.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 # Generated sources
-set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.pb.cc")
-set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.pb.h")
-set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.grpc.pb.cc")
-set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.grpc.pb.h")
+set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/mmb.pb.cc")
+set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/mmb.pb.h")
+set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/mmb.grpc.pb.cc")
+set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/mmb.grpc.pb.h")
 add_custom_command(
       OUTPUT "${hw_proto_srcs}" "${hw_proto_hdrs}" "${hw_grpc_srcs}" "${hw_grpc_hdrs}"
       COMMAND ${_PROTOBUF_PROTOC}
@@ -57,16 +57,10 @@ target_link_libraries(hw_grpc_proto
   ${_PROTOBUF_LIBPROTOBUF})
 
 
-# Targets greeter_[async_](client|server)
-foreach(_target
-  greeter_client greeter_server
-  greeter_async_client greeter_async_client2 middleService backend)
-  add_executable(${_target} ${_target}.cc)
-  target_link_libraries(${_target}
-    hw_grpc_proto
-    ${_REFLECTION}
-    ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})
-endforeach()
+include(client/CMakeLists.txt)
+include(messageService/CMakeLists.txt)
+include(mockDatabase/CMakeLists.txt)
+include(old/CMakeLists.txt)
+
 
 
