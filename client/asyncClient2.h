@@ -54,7 +54,11 @@ private:
         std::unique_ptr<ClientAsyncResponseReader<findLastMessageReply>> response_reader;
 
         void Proceed(bool ok) override{
-            std::cout << reply.message() << std::endl;
+            if(ok){
+                std::cout << "findMessage: " << reply.message() << std::endl;
+            }else{
+                std::cout << "findMessage Error: " << status.error_details() << std::endl;
+            }
         }
     };
 
@@ -74,7 +78,9 @@ private:
         std::unique_ptr<ClientAsyncResponseReader<saveMessageReply>> response_reader;
 
         void Proceed(bool ok) override{
-            std::cout << reply.ok() << std::endl;
+            if(!ok){
+                std::cout << "saveMessage Error: " << status.error_details() << std::endl;
+            }
         }
     };
 
