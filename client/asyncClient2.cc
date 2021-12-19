@@ -8,6 +8,7 @@
 
 #include "mock_message_board.grpc.pb.h"
 #include "asyncClient2.h"
+#include "../shared/consts.h"
 
 AsyncClient::AsyncClient(const std::shared_ptr<Channel> &channel)
         : stub_(messageService::NewStub(channel)){}
@@ -69,7 +70,7 @@ int main(int argc, char** argv) {
   // localhost at port 50051). We indicate that the channel isn't authenticated
   // (use of InsecureChannelCredentials()).
   AsyncClient client(grpc::CreateChannel(
-      "localhost:50052", grpc::InsecureChannelCredentials()));
+          M_MESSAGE_SERVICE_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
 
   // Spawn reader thread that loops indefinitely
   // only calls findmessage atm

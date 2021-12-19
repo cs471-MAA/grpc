@@ -60,6 +60,7 @@ target_link_libraries(hw_grpc_proto
 include(client/CMakeLists.txt)
 include(messageService/CMakeLists.txt)
 include(mockDatabase/CMakeLists.txt)
+include(sanitizationService/CMakeLists.txt)
 include(old/CMakeLists.txt)
 
 

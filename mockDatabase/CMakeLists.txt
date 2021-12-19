@@ -1,10 +1,17 @@
-# Targets greeter_[async_](client|server)
-foreach(_target
-        mockDatabase)
-    add_executable(${_target} mockDatabase/${_target}.h shared/thread_pool.h mockDatabase/${_target}.cc)
-    target_link_libraries(${_target}
-            hw_grpc_proto
-            ${_REFLECTION}
-            ${_GRPC_GRPCPP}
-            ${_PROTOBUF_LIBPROTOBUF})
-endforeach()
+
+
+
+add_executable(mockDatabaseAsync shared/consts.h shared/thread_pool.h shared/HashNode.h shared/HashMap.h shared/asyncHandler.h mockDatabase/asyncFindLastMessageHandler.h
+        mockDatabase/asyncSaveMessageHandler.h mockDatabase/mockDatabaseAsync.h mockDatabase/mockDatabaseAsync.cc)
+target_link_libraries(mockDatabaseAsync
+        hw_grpc_proto
+        ${_REFLECTION}
+        ${_GRPC_GRPCPP}
+        ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(mockDatabaseSync shared/HashNode.h shared/HashMap.h mockDatabase/mockDatabaseSync.h mockDatabase/mockDatabaseSync.cc)
+target_link_libraries(mockDatabaseSync
+        hw_grpc_proto
+        ${_REFLECTION}
+        ${_GRPC_GRPCPP}
+        ${_PROTOBUF_LIBPROTOBUF})

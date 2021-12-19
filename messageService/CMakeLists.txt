@@ -1,8 +1,8 @@
-# Targets greeter_[async_](client|server)
 
-add_executable(messageService messageService/messageService.h messageService/asyncClient.h
-        messageService/messageService.cc messageService/asyncClient.cc)
-target_link_libraries(messageService
+add_executable(messageServiceAsync shared/consts.h messageService/asyncFindLastMessageHandler.h messageService/asyncSendMessageHandler.h
+        messageService/messageServiceAsync.h messageService/asyncFindLastMessageHandler.cc
+        messageService/asyncSendMessageHandler.cc messageService/messageServiceAsync.cc)
+target_link_libraries(messageServiceAsync
         hw_grpc_proto
         ${_REFLECTION}
         ${_GRPC_GRPCPP}
