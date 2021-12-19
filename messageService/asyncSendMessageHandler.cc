@@ -1,6 +1,8 @@
 #include <thread>
 #include <sstream>
+#include <utility>
 #include "asyncSendMessageHandler.h"
+#include "../shared/Utils.h"
 
 using grpc::Status;
 
@@ -49,8 +51,10 @@ void sanitizeMessage_asyncClient::Proceed(bool ok) {
 // ###############################################
 
 asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                                                 std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)) {
+                                                 std::shared_ptr<grpc::ChannelInterface>  channel,
+                                                 grpc::CompletionQueue *cqClient, std::shared_ptr<ServerStats2> serverStats)
+        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)),
+        serverStats(std::move(serverStats)){
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
@@ -63,6 +67,7 @@ asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *s
 
 void asyncSendMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
+        serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
         // The actual processing.
 
@@ -72,9 +77,10 @@ void asyncSendMessageHandler::Proceed(bool ok) {
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new asyncSendMessageHandler(service_, cq_, channel, cqClient);
+        new asyncSendMessageHandler(service_, cq_, channel, cqClient, serverStats);
     } else {
         GPR_ASSERT(status_ == FINISH);
+        serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
         // Once in the FINISH state, deallocate ourselves (CallData).
         delete this;
     }

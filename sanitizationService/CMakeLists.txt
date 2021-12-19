@@ -1,5 +1,5 @@
 
-add_executable(sanitizationServiceAsync shared/ServerStats2.h shared/ServerStats2.cpp shared/consts.h shared/thread_pool.h shared/Utils.h
+add_executable(sanitizationServiceAsync shared/ServerStats2.h shared/ServerStats2.cpp shared/consts.h shared/thread_pool.h shared/Utils.h shared/Utils.cc
         sanitizationService/asyncSanitizeMessageHandler.h
         sanitizationService/sanitizationServiceAsync.h sanitizationService/asyncSanitizeMessageHandler.cc
         sanitizationService/sanitizationServiceAsync.cc)

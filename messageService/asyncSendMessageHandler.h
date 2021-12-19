@@ -1,6 +1,7 @@
 
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/asyncHandler.h"
+#include "../shared/ServerStats2.h"
 
 using mmb::messageService;
 using mmb::saveMessageRequest;
@@ -59,7 +60,8 @@ public:
     * with the gRPC runtime.
      */
     asyncSendMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                            std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient);
+                            std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient,
+                            std::shared_ptr<ServerStats2> serverStats);
 
     void Proceed(bool ok) override;
 
@@ -90,4 +92,5 @@ private:
     // Let's implement a tiny state machine with the following states.
     enum CallStatus {PROCESS, FINISH};
     std::atomic<CallStatus> status_;  // The current serving state.
+    std::shared_ptr<ServerStats2> serverStats;
 };

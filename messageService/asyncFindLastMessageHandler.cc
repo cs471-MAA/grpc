@@ -1,6 +1,7 @@
 #include <thread>
 #include <sstream>
 #include "asyncFindLastMessageHandler.h"
+#include "../shared/Utils.h"
 
 using grpc::Status;
 
@@ -16,7 +17,6 @@ void findLastMessage_asyncClient::findLastMessage(findLastMessageRequest &reques
 
     // You can declare error and stuff
     status = Status();
-
 
     // stub_->PrepareAsyncSayHello() creates an RPC object, returning
     // an instance to store in "call" but does not actually start the RPC
@@ -49,20 +49,22 @@ void findLastMessage_asyncClient::Proceed(bool ok) {
 // ###############################################
 
 asyncFindLastMessageHandler::asyncFindLastMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                   std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)) {
+                   std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient,
+                                                         std::shared_ptr<ServerStats2> serverStats)
+        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)),
+          serverStats(std::move(serverStats)){
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
     // the tag uniquely identifying the request (so that different CallData
     // instances can serve different requests concurrently), in this case
     // the memory address of this CallData instance.
-    service_->RequestfindLastMessage(&ctx_, &request_, &responder_, cq_, cq_,
-                                     this);
+    service_->RequestfindLastMessage(&ctx_, &request_, &responder_, cq_, cq_, this);
 }
 
 void asyncFindLastMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
+        serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
         auto asyncClient = new findLastMessage_asyncClient(channel, cqClient, this);
         asyncClient->findLastMessage(request_);
@@ -70,9 +72,10 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new asyncFindLastMessageHandler(service_, cq_, channel, cqClient);
+        new asyncFindLastMessageHandler(service_, cq_, channel, cqClient, serverStats);
     } else {
         GPR_ASSERT(status_ == FINISH);
+        serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
         // Once in the FINISH state, deallocate ourselves (CallData).
         delete this;
     }
