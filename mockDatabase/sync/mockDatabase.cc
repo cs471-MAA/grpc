@@ -39,7 +39,7 @@ Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb
     return Service::saveMessage(context, request, response);
 }
 
-void RunSyncServer(unsigned long workerThreads,
+void RunServer(unsigned long workerThreads,
                    uint32_t meanWaitingTime,
                    uint32_t stdWaitingTime) {
     std::string server_address(MOCK_DATABASE_SYNC_SOCKET_ADDRESS);
@@ -71,6 +71,6 @@ int main(int argc, char **argv) {
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 3000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
 
-    RunSyncServer(workerThreads, meanWaitingTime, stdWaitingTime);
+    RunServer(workerThreads, meanWaitingTime, stdWaitingTime);
     return 0;
 }

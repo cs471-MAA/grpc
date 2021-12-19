@@ -2,20 +2,24 @@
 // Created by adrien on 19.12.21.
 //
 
-#include "sanitizationService.h"
-#include "../../shared/consts.h"
-
+#include <thread>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
+
+#include "sanitizationService.h"
+#include "../../shared/consts.h"
 
 using mmb::saveMessageRequest;
 using mmb::findLastMessageReply;
 using mmb::saveMessageRequest;
 using mmb::saveMessageReply;
 
-
-sanitizationServiceImpl::sanitizationServiceImpl() {
+sanitizationServiceImpl::sanitizationServiceImpl(uint32_t meanWaitingTime,
+                                                 uint32_t stdWaitingTime):
+    meanWaitingTime(meanWaitingTime), 
+    stdWaitingTime(stdWaitingTime)  
+{
     mockDatabaseStub_ = mmb::mockDatabase::NewStub(grpc::CreateChannel(MOCK_DATABASE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
 }
 
@@ -26,12 +30,17 @@ sanitizationServiceImpl::sanitize_message(::grpc::ServerContext *context, const 
     // the server and/or tweak certain RPC behaviors.
     grpc::ClientContext clientContext;
 
-    return mockDatabaseStub_->saveMessage(&clientContext, *request, response);}
+    auto result = mockDatabaseStub_->saveMessage(&clientContext, *request, response);
+    this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
+    return result;
+}
 
 
-void RunServer() {
+void RunServer(unsigned long workerThreads,
+               uint32_t meanWaitingTime,
+               uint32_t stdWaitingTime) {
     std::string server_address(M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS);
-    sanitizationServiceImpl service;
+    sanitizationServiceImpl service(meanWaitingTime, stdWaitingTime);
 
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -51,7 +60,11 @@ void RunServer() {
 }
 
 int main(int argc, char** argv) {
-    RunServer();
+    int i = 0;
+    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 1;
+    uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 3000);
+    uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+    RunServer(workerThreads, meanWaitingTime, stdWaitingTime);
 
     return 0;
 }
