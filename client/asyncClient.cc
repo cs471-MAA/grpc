@@ -1,121 +1,104 @@
-/*
- *
- * Copyright 2015 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
 
-#ifdef BAZEL_BUILD
-#include "examples/protos/helloworld.grpc.pb.h"
-#else
-#include "helloworld.grpc.pb.h"
-#endif
+#include "mock_message_board.grpc.pb.h"
+#include "asyncClient.h"
+#include "../shared/consts.h"
 
-using grpc::Channel;
-using grpc::ClientAsyncResponseReader;
-using grpc::ClientContext;
-using grpc::CompletionQueue;
-using grpc::Status;
-using helloworld::Greeter;
-using helloworld::HelloReply;
-using helloworld::HelloRequest;
+AsyncClient::AsyncClient(const std::shared_ptr<Channel> &channel)
+        : stub_(messageService::NewStub(channel)){}
 
-class GreeterClient {
- public:
-  explicit GreeterClient(const std::shared_ptr<Channel>& channel)
-      : stub_(Greeter::NewStub(channel)) {}
-
-  // Assembles the client's payload, sends it and presents the response back
-  // from the server.
-  std::string SayHello(const std::string& user) {
+void AsyncClient::findLastMessage(const std::string &cliend_id, uint64_t query_uid) {
     // Data we are sending to the server.
-    HelloRequest request;
-    request.set_name(user);
+    findLastMessageRequest request;
+    request.set_client_id(cliend_id);
+    request.set_query_uid(query_uid);
 
-    // Container for the data we expect from the server.
-    HelloReply reply;
-
-    // Context for the client. It could be used to convey extra information to
-    // the server and/or tweak certain RPC behaviors.
-    ClientContext context;
-
-    // The producer-consumer queue we use to communicate asynchronously with the
-    // gRPC runtime.
-    CompletionQueue cq;
-
-    // Storage for the status of the RPC upon completion.
-    Status status;
+    // Call object to store rpc data
+    auto* call = new AsC_findLastMessageCall();
 
     // stub_->PrepareAsyncSayHello() creates an RPC object, returning
     // an instance to store in "call" but does not actually start the RPC
     // Because we are using the asynchronous API, we need to hold on to
     // the "call" instance in order to get updates on the ongoing RPC.
-    std::unique_ptr<ClientAsyncResponseReader<HelloReply> > rpc(
-        stub_->PrepareAsyncSayHello(&context, request, &cq));
+    call->response_reader = stub_->PrepareAsyncfindLastMessage(&call->context, request, &cq_);
 
     // StartCall initiates the RPC call
-    rpc->StartCall();
+    call->response_reader->StartCall();
 
     // Request that, upon completion of the RPC, "reply" be updated with the
     // server's response; "status" with the indication of whether the operation
-    // was successful. Tag the request with the integer 1.
-    rpc->Finish(&reply, &status, (void*)1);
-    void* got_tag;
+    // was successful. Tag the request with the memory address of the call
+    // object.
+    call->response_reader->Finish(&call->reply, &call->status, (void*)call);
+}
+
+void AsyncClient::sendMessage(const std::string &cliend_id, const std::string &message, uint64_t query_uid) {
+    // Data we are sending to the server.
+    saveMessageRequest request;
+    request.set_client_id(cliend_id);
+    request.set_message(message);
+    request.set_query_uid(query_uid);
+
+    // Call object to store rpc data
+    auto* call = new AsC_saveMessageCall;
+
+    // stub_->PrepareAsyncSayHello() creates an RPC object, returning
+    // an instance to store in "call" but does not actually start the RPC
+    // Because we are using the asynchronous API, we need to hold on to
+    // the "call" instance in order to get updates on the ongoing RPC.
+    call->response_reader = stub_->PrepareAsyncsendMessage(&call->context, request, &cq_);
+
+    // StartCall initiates the RPC call
+    call->response_reader->StartCall();
+
+    // Request that, upon completion of the RPC, "reply" be updated with the
+    // server's response; "status" with the indication of whether the operation
+    // was successful. Tag the request with the memory address of the call
+    // object.
+    call->response_reader->Finish(&call->reply, &call->status, (void*)call);
+}
+
+void AsyncClient::AsyncCompleteRpc() {
+    void* tag;
     bool ok = false;
+
     // Block until the next result is available in the completion queue "cq".
-    // The return value of Next should always be checked. This return value
-    // tells us whether there is any kind of event or the cq_ is shutting down.
-    GPR_ASSERT(cq.Next(&got_tag, &ok));
-
-    // Verify that the result from "cq" corresponds, by its tag, our previous
-    // request.
-    GPR_ASSERT(got_tag == (void*)1);
-    // ... and that the request was completed successfully. Note that "ok"
-    // corresponds solely to the request for updates introduced by Finish().
-    GPR_ASSERT(ok);
-
-    // Act upon the status of the actual RPC.
-    if (status.ok()) {
-      return reply.message();
-    } else {
-      return "RPC failed";
+    while (true) {
+        GPR_ASSERT(cq_.Next(&tag, &ok));
+        GPR_ASSERT(ok);
+        static_cast<asyncHandler *>(tag)->Proceed(ok);
     }
-  }
-
- private:
-  // Out of the passed in Channel comes the stub, stored here, our view of the
-  // server's exposed services.
-  std::unique_ptr<Greeter::Stub> stub_;
-};
+}
 
 int main(int argc, char** argv) {
   // Instantiate the client. It requires a channel, out of which the actual RPCs
   // are created. This channel models a connection to an endpoint (in this case,
   // localhost at port 50051). We indicate that the channel isn't authenticated
   // (use of InsecureChannelCredentials()).
-  GreeterClient greeter(grpc::CreateChannel(
-      "localhost:50051", grpc::InsecureChannelCredentials()));
-  std::string user("world");
-  std::string reply = greeter.SayHello(user);  // The actual RPC call!
-  std::cout << "Greeter received: " << reply << std::endl;
+  AsyncClient client(grpc::CreateChannel(
+          M_MESSAGE_SERVICE_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
+
+  // Spawn reader thread that loops indefinitely
+  // only calls findmessage atm
+  std::thread thread_ = std::thread(&AsyncClient::AsyncCompleteRpc, &client);
+  std::thread thread2_ = std::thread(&AsyncClient::AsyncCompleteRpc, &client);
+
+  for (int i = 0; i < 10000; i++) {
+    std::string user("world " + std::to_string(i));
+      client.findLastMessage("world " + std::to_string(i-40));  // The actual RPC call!
+      client.sendMessage("world " + std::to_string(i), "world " + std::to_string(i));  // The actual RPC call!
+  }
+
+  std::cout << "Press control-c to quit" << std::endl << std::endl;
+  thread_.join();  // blocks forever
+  thread2_.join();  // blocks forever
 
   return 0;
 }
+
