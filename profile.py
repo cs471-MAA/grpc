@@ -15,7 +15,7 @@ def create_node(node_name, ports, entrypoint):
 
     # Indicate the image is external
     # node.docker_extimage = "saheru/grpc-benchmark:latest"
-    node.docker_extimage = "ubuntu:latest"
+    node.docker_extimage = "ubuntu:16.04"
 
     # Indicate the dockerfile for the benchmark
     # node.docker_dockerfile = "/local/repository/benchmark.dockerfile"
@@ -36,15 +36,15 @@ def create_node(node_name, ports, entrypoint):
 create_node('mock-database',
             ports='20001:10001',
             entrypoint="/app/cmake/build/mockDatabaseAsync 1 32 100000")
-create_node('sanitization-service',
-            ports='20003:10003',
-            entrypoint="/app/cmake/build/sanitizationServiceAsync 1 32")
-create_node('message-service',
-            ports='20002:10002',
-            entrypoint="/app/cmake/build/messageServiceAsync 1 32")
-create_node('client',
-            ports='',
-            entrypoint="/app/cmake/build/clientAsync 100 TestUser 'Test Message' 100000 0.995")
+# create_node('sanitization-service',
+#             ports='20003:10003',
+#             entrypoint="/app/cmake/build/sanitizationServiceAsync 1 32")
+# create_node('message-service',
+#             ports='20002:10002',
+#             entrypoint="/app/cmake/build/messageServiceAsync 1 32")
+# create_node('client',
+#             ports='',
+#             entrypoint="/app/cmake/build/clientAsync 100 TestUser 'Test Message' 100000 0.995")
 
 # Print the RSpec to the enclosing page.
 pc.printRequestRSpec(request)
