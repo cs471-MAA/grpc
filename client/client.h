@@ -5,6 +5,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include "mock_message_board.grpc.pb.h"
+#include "../../shared/ServerStats2.h"
+#include "../../shared/Utils.h"
 
 using grpc::Channel;
 using grpc::ClientContext;

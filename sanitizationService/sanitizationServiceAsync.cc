@@ -10,7 +10,7 @@ sanitizationServiceAsyncImpl::sanitizationServiceAsyncImpl(std::uint_fast32_t wo
                                                            uint32_t meanWaitingTime,
                                                            uint32_t stdWaitingTime)
         : threadPool(workerThreads), meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
-    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "sanitServiceAsync.csv");
+    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR SANITIZATION_SERVICE_ASYNC_FILENAME);
 }
 
 sanitizationServiceAsyncImpl::~sanitizationServiceAsyncImpl() {

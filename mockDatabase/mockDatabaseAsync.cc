@@ -13,7 +13,7 @@ using namespace std;
 
 ServerAsyncImpl::ServerAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime)
         : threadPool(workerThreads), meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
-    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "mockDatabaseAsync.csv");
+    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR MOCK_DATABASE_ASYNC_FILENAME);
 }
 
 ServerAsyncImpl::~ServerAsyncImpl() {

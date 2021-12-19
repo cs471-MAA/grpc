@@ -20,16 +20,19 @@ using namespace std;
 messageServiceImpl::messageServiceImpl(uint32_t meanWaitingTime,
                                        uint32_t stdWaitingTime):
     meanWaitingTime(meanWaitingTime), 
-    stdWaitingTime(stdWaitingTime)
+    stdWaitingTime(stdWaitingTime),
+    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MESSAGE_SERVICE_SYNC_FILENAME))
 {
-    mockDatabaseStub_ = mmb::mockDatabase::NewStub(grpc::CreateChannel(MOCK_DATABASE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
+    mockDatabaseStub_ = mmb::mockDatabase::NewStub(grpc::CreateChannel(M_MOCK_DATABASE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
     sanitizationServiceStub_ = mmb::sanitizationService::NewStub(grpc::CreateChannel(M_SANITIZATION_SERVICE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
+
 }
 
 ::grpc::Status
 messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
                                     ::mmb::findLastMessageReply *response) {
 
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     grpc::ClientContext clientContext;
@@ -38,18 +41,22 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
 
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
 
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
+
     return result;
 }
 
 ::grpc::Status messageServiceImpl::sendMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
                                                ::mmb::saveMessageReply *response) {
 
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     grpc::ClientContext clientContext;
     auto result = sanitizationServiceStub_->sanitize_message(&clientContext, *request, response);
 
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
 
     return result;
 }
