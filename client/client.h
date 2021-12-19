@@ -19,12 +19,15 @@ using mmb::saveMessageReply;
 
 class Client {
 public:
-    Client(std::shared_ptr<Channel> channel): stub_(mmb::messageService::NewStub(channel)) {}
+    Client(std::shared_ptr<Channel> channel,  std::shared_ptr<ServerStats2> serverStats): 
+        stub_(mmb::messageService::NewStub(channel)),
+        serverStats(serverStats) {}
 
-    std::string findLastMessage(const std::string &cliend_id, uint64_t query_uid = 0){
+    std::string findLastMessage(const std::string &client_id, uint64_t query_uid = 0){
+        serverStats->add_entry(query_uid, get_epoch_time_us());
         // Data we are sending to the server.
         findLastMessageRequest request;
-        request.set_client_id(cliend_id);
+        request.set_client_id(client_id);
         request.set_query_uid(query_uid);
 
         // Container for the data we expect from the server.
@@ -39,6 +42,7 @@ public:
 
         // Act upon its status.
         if (status.ok()) {
+            serverStats->add_entry(query_uid, get_epoch_time_us());
             return reply.message();
         } else {
             std::cout << status.error_code() << ": " << status.error_message()
@@ -48,6 +52,7 @@ public:
     }
 
     bool sendMessage(const std::string &cliend_id, const std::string &message, uint64_t query_uid = 0){
+        serverStats->add_entry(query_uid, get_epoch_time_us());
         // Data we are sending to the server.
         saveMessageRequest request;
         request.set_client_id(cliend_id);
@@ -66,6 +71,7 @@ public:
 
         // Act upon its status.
         if (status.ok()) {
+            serverStats->add_entry(query_uid, get_epoch_time_us());
             return reply.ok();
         } else {
             std::cout << status.error_code() << ": " << status.error_message()
@@ -76,6 +82,7 @@ public:
 
 private:
     std::unique_ptr<mmb::messageService::Stub> stub_;
+    std::shared_ptr<ServerStats2> serverStats;
 };
 
 
