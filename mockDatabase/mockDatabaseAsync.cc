@@ -64,7 +64,7 @@ void ServerAsyncImpl::HandleRpcs() {
 int main(int argc, char **argv) {
 
     int i = 0;
-    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 1;
+    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 2;
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 3000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
 
