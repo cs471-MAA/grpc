@@ -62,7 +62,7 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
 }
 
 
-void RunServer(unsigned long workerThreads,
+void RunServer(int workerThreads,
                uint32_t meanWaitingTime,
                uint32_t stdWaitingTime) {
     string server_address(M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS);
@@ -93,7 +93,7 @@ void RunServer(unsigned long workerThreads,
 
 int main(int argc, char** argv) {
     int i = 0;
-    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 2;
+    int workerThreads = (argc > ++i) ? stoi(argv[i]) : 5;
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 500);
 
