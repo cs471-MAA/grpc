@@ -2,6 +2,7 @@
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/asyncHandler.h"
 #include "../shared/thread_pool.h"
+#include "../shared/ServerStats2.h"
 
 using mmb::sanitizationService;
 using mmb::saveMessageRequest;
@@ -62,7 +63,8 @@ public:
      */
     asyncSanitizeMessageHandler(sanitizationService::AsyncService *service, ServerCompletionQueue *cq,
                                 std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient,
-                                thread_pool &threadPool, std::chrono::microseconds waiting_time);
+                                thread_pool &threadPool, std::chrono::microseconds waiting_time,
+                                std::shared_ptr<ServerStats2> serverStats);
 
     void Proceed(bool ok) override;
 
@@ -96,4 +98,5 @@ private:
 
     thread_pool& threadPool;
     std::chrono::microseconds waiting_time;
+    std::shared_ptr<ServerStats2> serverStats;
 };

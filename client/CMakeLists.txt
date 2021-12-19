@@ -1,7 +1,7 @@
 # Targets greeter_[async_](client|server)
 foreach(_target
         asyncClient)
-    add_executable(${_target} shared/consts.h client/${_target}.h client/${_target}.cc )
+    add_executable(${_target} shared/consts.h shared/Utils.h client/${_target}.h client/${_target}.cc )
     target_link_libraries(${_target}
             hw_grpc_proto
             ${_REFLECTION}

@@ -5,7 +5,7 @@
 
 sanitizationServiceAsyncImpl::sanitizationServiceAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::microseconds waiting_time)
 : threadPool(workerThreads), waiting_time(waiting_time){
-
+    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "sanitService.csv");
 }
 
 sanitizationServiceAsyncImpl::~sanitizationServiceAsyncImpl() {
@@ -42,7 +42,7 @@ void sanitizationServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
     std::thread threadClient = std::thread(&sanitizationServiceAsyncImpl::HandleChannel, cqClient);
 
     // Spawn a new CallData instance to serve new clients.
-    new asyncSanitizeMessageHandler(&service_, cq, DBchannel, cqClient, threadPool, waiting_time);
+    new asyncSanitizeMessageHandler(&service_, cq, DBchannel, cqClient, threadPool, waiting_time, serverStats);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {

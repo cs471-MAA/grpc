@@ -1,6 +1,8 @@
 #include <thread>
 #include <sstream>
+#include <utility>
 #include "asyncSanitizeMessageHandler.h"
+#include "../shared/Utils.h"
 
 using grpc::Status;
 
@@ -51,9 +53,10 @@ void mockDatabase_asyncClient::Proceed(bool ok) {
 asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(sanitizationService::AsyncService *service, ServerCompletionQueue *cq,
                                                          std::shared_ptr<grpc::ChannelInterface>  channel,
                                                          grpc::CompletionQueue *cqClient, thread_pool &threadPool,
-                                                         std::chrono::microseconds waiting_time)
+                                                         std::chrono::microseconds waiting_time,
+                                                         std::shared_ptr<ServerStats2> serverStats)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
-        channel(std::move(channel)), threadPool(threadPool), waiting_time(waiting_time) {
+        channel(std::move(channel)), threadPool(threadPool), waiting_time(waiting_time), serverStats(std::move(serverStats)){
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
@@ -66,6 +69,7 @@ asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(sanitizationService::As
 
 void asyncSanitizeMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
+        serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
         // Push the request into a worker thread pool just like a real DB would do
         threadPool.push_task([&] (){
@@ -76,12 +80,10 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
             asyncClient->saveMessage(request_);
         });
 
-
-
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new asyncSanitizeMessageHandler(service_, cq_, channel, cqClient, threadPool, waiting_time);
+        new asyncSanitizeMessageHandler(service_, cq_, channel, cqClient, threadPool, waiting_time, serverStats);
     } else {
         GPR_ASSERT(status_ == FINISH);
         // Once in the FINISH state, deallocate ourselves (CallData).
@@ -96,6 +98,7 @@ void asyncSanitizeMessageHandler::Finish(const saveMessageReply &reply) {
     // the event.
     status_ = FINISH;
     // Thread safe
+    serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
     responder_.Finish(reply, Status::OK, this);
 }
 
@@ -105,5 +108,6 @@ void asyncSanitizeMessageHandler::FinishWithError() {
     // the event.
     status_ = FINISH;
     // Thread safe
+    serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
     responder_.FinishWithError(Status::CANCELLED, this);
 }

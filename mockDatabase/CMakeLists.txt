@@ -1,7 +1,7 @@
 
 
 
-add_executable(mockDatabaseAsync shared/consts.h shared/thread_pool.h shared/HashNode.h shared/HashMap.h shared/asyncHandler.h
+add_executable(mockDatabaseAsync shared/consts.h shared/thread_pool.h shared/HashNode.h shared/HashMap.h shared/asyncHandler.h shared/Utils.h
         mockDatabase/asyncFindLastMessageHandler.h
         mockDatabase/asyncSaveMessageHandler.h mockDatabase/mockDatabaseAsync.h mockDatabase/mockDatabaseAsync.cc)
 target_link_libraries(mockDatabaseAsync

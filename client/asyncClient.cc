@@ -89,10 +89,11 @@ int main(int argc, char** argv) {
   std::thread thread_ = std::thread(&AsyncClient::AsyncCompleteRpc, &client);
   std::thread thread2_ = std::thread(&AsyncClient::AsyncCompleteRpc, &client);
 
-  for (int i = 0; i < 10000; i++) {
+  int upper_bound = 10000;
+  for (int i = 0; i < upper_bound; i++) {
     std::string user("world " + std::to_string(i));
-      client.findLastMessage("world " + std::to_string(i-40));  // The actual RPC call!
-      client.sendMessage("world " + std::to_string(i), "world " + std::to_string(i));  // The actual RPC call!
+      client.findLastMessage("world " + std::to_string(i-40), i);  // The actual RPC call!
+      client.sendMessage("world " + std::to_string(i), "world " + std::to_string(i), upper_bound + i);  // The actual RPC call!
   }
 
   std::cout << "Press control-c to quit" << std::endl << std::endl;

@@ -1,6 +1,7 @@
 #include <grpcpp/grpcpp.h>
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/thread_pool.h"
+#include "../shared/ServerStats2.h"
 
 using grpc::ServerCompletionQueue;
 using grpc::CompletionQueue;
@@ -27,4 +28,5 @@ private:
     std::unique_ptr<Server> server_;
     thread_pool threadPool;
     std::chrono::microseconds waiting_time;
+    std::shared_ptr<ServerStats2> serverStats;
 };
