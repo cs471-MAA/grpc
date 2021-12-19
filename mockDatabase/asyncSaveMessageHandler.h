@@ -26,10 +26,11 @@ public:
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
     asyncSaveMessageHandler(mockDatabase::AsyncService *service, ServerCompletionQueue *cq, thread_pool &threadPool,
-                            std::chrono::microseconds waiting_time, CTSL::HashMap<std::string, std::string> &hashMap,
+                            uint32_t meanWaitingTime, uint32_t stdWaitingTime,
+                            CTSL::HashMap<std::string, std::string> &hashMap,
                             std::shared_ptr<ServerStats2> serverStats)
             : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), threadPool(threadPool),
-              waiting_time(waiting_time), hashMap(hashMap), serverStats(std::move(serverStats)) {
+              meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime), hashMap(hashMap), serverStats(std::move(serverStats)) {
 
         // As part of the initial CREATE state, we *request* that the system
         // start processing SayHello requests. In this request, "this" acts are
@@ -49,11 +50,8 @@ public:
             threadPool.push_task([&]() {
                 hashMap.insert(request_.client_id(), request_.message());
 
-                auto a = waiting_time.count();
-                std::random_device dev;
-                std::mt19937 generator(dev());
-                std::normal_distribution<float> normal_dist(a, a / 2);
-                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
+                auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((t))));
 
                 status_ = FINISH;
                 responder_.Finish(reply_, Status::OK, this);
@@ -62,7 +60,7 @@ public:
             // Spawn a new CallData instance to serve new clients while we process
             // the one for this CallData. The instance will deallocate itself as
             // part of its FINISH state.
-            new asyncSaveMessageHandler(service_, cq_, threadPool, waiting_time, hashMap, serverStats);
+            new asyncSaveMessageHandler(service_, cq_, threadPool, meanWaitingTime, stdWaitingTime, hashMap, serverStats);
         } else {
             GPR_ASSERT(status_ == FINISH);
             serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
@@ -97,7 +95,8 @@ private:
     std::atomic<CallStatus> status_; // The current serving state.
 
     thread_pool &threadPool;
-    std::chrono::microseconds waiting_time;
+    uint32_t meanWaitingTime;
+    uint32_t stdWaitingTime;
     CTSL::HashMap<std::string, std::string> &hashMap;
     std::shared_ptr<ServerStats2> serverStats;
 };

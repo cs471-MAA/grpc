@@ -2,3 +2,6 @@ stats/*
 Session.vim
 .undodir
 .undodir/**
+build
+.vscode
+container_files/*

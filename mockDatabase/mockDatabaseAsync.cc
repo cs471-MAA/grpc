@@ -9,10 +9,10 @@
 #include "../shared/consts.h"
 
 using grpc::ServerBuilder;
+using namespace std;
 
-
-ServerAsyncImpl::ServerAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::microseconds waiting_time)
-        : threadPool(workerThreads), waiting_time(waiting_time) {
+ServerAsyncImpl::ServerAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime)
+        : threadPool(workerThreads), meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
     serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "mockDatabaseAsync.csv");
 }
 
@@ -44,8 +44,8 @@ void ServerAsyncImpl::Run() {
 
 void ServerAsyncImpl::HandleRpcs() {
     // Spawn a new CallData instance to serve new clients.
-    new asyncFindLastMessageHandler(&service_, cq_.get(), threadPool, waiting_time, hashMap, serverStats);
-    new asyncSaveMessageHandler(&service_, cq_.get(), threadPool, waiting_time, hashMap, serverStats);
+    new asyncFindLastMessageHandler(&service_, cq_.get(), threadPool, meanWaitingTime, stdWaitingTime, hashMap, serverStats);
+    new asyncSaveMessageHandler(&service_, cq_.get(), threadPool, meanWaitingTime, stdWaitingTime, hashMap, serverStats);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -62,10 +62,13 @@ void ServerAsyncImpl::HandleRpcs() {
 
 
 int main(int argc, char **argv) {
-    unsigned long workerThreads = 10;
-    std::chrono::microseconds waitingTime(3000);
 
-    ServerAsyncImpl server(workerThreads, waitingTime);
+    int i = 0;
+    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 1;
+    uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 3000);
+    uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+
+    ServerAsyncImpl server(workerThreads, meanWaitingTime, stdWaitingTime);
     server.Run();
 
     return 0;

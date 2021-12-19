@@ -3,9 +3,13 @@
 #include "asyncSanitizeMessageHandler.h"
 #include "../shared/consts.h"
 
+
+using namespace std;
+
 sanitizationServiceAsyncImpl::sanitizationServiceAsyncImpl(std::uint_fast32_t workerThreads,
-                                                           std::chrono::microseconds waiting_time)
-        : threadPool(workerThreads), waiting_time(waiting_time) {
+                                                           uint32_t meanWaitingTime,
+                                                           uint32_t stdWaitingTime)
+        : threadPool(workerThreads), meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
     serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "sanitServiceAsync.csv");
 }
 
@@ -44,7 +48,7 @@ void sanitizationServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
     std::thread threadClient = std::thread(&sanitizationServiceAsyncImpl::HandleChannel, cqClient);
 
     // Spawn a new CallData instance to serve new clients.
-    new asyncSanitizeMessageHandler(&service_, cq, DBchannel, cqClient, threadPool, waiting_time, serverStats);
+    new asyncSanitizeMessageHandler(&service_, cq, DBchannel, cqClient, threadPool, meanWaitingTime, stdWaitingTime, serverStats);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -76,10 +80,13 @@ void sanitizationServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
 
 
 int main(int argc, char **argv) {
-    unsigned long workerThreads = 10;
-    std::chrono::microseconds waitingTime(1000);
 
-    sanitizationServiceAsyncImpl server(workerThreads, waitingTime);
+    int i = 0;
+    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 1;
+    uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+    uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+
+    sanitizationServiceAsyncImpl server(workerThreads, meanWaitingTime, stdWaitingTime);
     server.Run();
 
     return 0;

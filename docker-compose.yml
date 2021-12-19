@@ -6,9 +6,9 @@ services:
         ports:
             - 20001:10001
         entrypoint:
-            ["/app/cmake/build/mockDatabaseAsync", "1", "32", "100000"] #Last argument is delay of mock database, in microseconds
+            ["/app/cmake/build/mockDatabaseAsync", "${W_MOCK}", "${t_MOCK}", "${s_SANIT}"]
         volumes:
-          - ./stats_files:/app/stats_files:rw
+          - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
 
     sanitization-service:
@@ -17,11 +17,11 @@ services:
         ports:
             - 20003:10003
         entrypoint:
-            ["/app/cmake/build/sanitizationServiceAsync", "1", "32"]
+            ["/app/cmake/build/sanitizationServiceAsync", "${W_SANIT}", "${t_SANIT}", "${s_SANIT}"]
         depends_on:
             - mock-database
         volumes:
-          - ./stats_files:/app/stats_files:rw
+          - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
 
     message-service:
@@ -30,12 +30,12 @@ services:
         ports:
             - 20002:10002
         entrypoint:
-            ["/app/cmake/build/messageServiceAsync", "1", "32"]
+            ["/app/cmake/build/messageServiceAsync", "${W_MSG}", "${t_MSG}", "${s_MSG}"]
         depends_on:
             - mock-database
             - sanitization-service
         volumes:
-          - ./stats_files:/app/stats_files:rw
+          - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
 
     client:
@@ -43,11 +43,9 @@ services:
         hostname: client
         # restart: always
         entrypoint:
-            #Before the last argument is delay between query, in microseconds
-            #The last argument is the factor modifiying the waiting time at each iterations
-            ["/app/cmake/build/clientAsync", "100", "TestUser", "Test Message", "100000", "0.995"]
+            ["/app/cmake/build/clientAsync", "${N}", "${t_DELAY}", "${s_DELAY}", "${P}", "${SEED}"]
         depends_on:
             - message-service
         volumes:
-          - ./stats_files:/app/stats_files:rw
+          - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT

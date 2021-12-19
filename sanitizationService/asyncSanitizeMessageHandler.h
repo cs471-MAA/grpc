@@ -63,8 +63,11 @@ public:
     * with the gRPC runtime.
      */
     asyncSanitizeMessageHandler(sanitizationService::AsyncService *service, ServerCompletionQueue *cq,
-                                std::shared_ptr<grpc::ChannelInterface> channel, grpc::CompletionQueue *cqClient,
-                                thread_pool &threadPool, std::chrono::microseconds waiting_time,
+                                std::shared_ptr<grpc::ChannelInterface> channel, 
+                                grpc::CompletionQueue *cqClient,
+                                thread_pool &threadPool, 
+                                uint32_t meanWaitingTime, 
+                                uint32_t stdWaitingTime,
                                 std::shared_ptr<ServerStats2> serverStats);
 
     void Proceed(bool ok) override;
@@ -100,6 +103,7 @@ private:
     std::atomic<CallStatus> status_;  // The current serving state.
 
     thread_pool &threadPool;
-    std::chrono::microseconds waiting_time;
+    uint32_t meanWaitingTime;
+    uint32_t stdWaitingTime;
     std::shared_ptr<ServerStats2> serverStats;
 };

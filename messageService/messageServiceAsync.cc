@@ -5,7 +5,10 @@
 #include "../shared/consts.h"
 
 
-messageServiceAsyncImpl::messageServiceAsyncImpl() {
+using namespace std;
+
+messageServiceAsyncImpl::messageServiceAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime):
+        threadPool(workerThreads), meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
     serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "messageServiceAsync.csv");
 }
 
@@ -50,8 +53,8 @@ void messageServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
     std::thread threadClient = std::thread(&messageServiceAsyncImpl::HandleChannel, cqClient);
 
     // Spawn a new CallData instance to serve new clients.
-    new asyncFindLastMessageHandler(&service_, cq, DBchannel, cqClient, serverStats);
-    new asyncSendMessageHandler(&service_, cq, Sanitchannel, cqClient, serverStats);
+    new asyncFindLastMessageHandler(&service_, cq, DBchannel, cqClient, threadPool, meanWaitingTime, stdWaitingTime, serverStats);
+    new asyncSendMessageHandler(&service_, cq, Sanitchannel, cqClient, threadPool,meanWaitingTime, stdWaitingTime, serverStats);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -74,7 +77,7 @@ void messageServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
         // event is uniquely identified by its tag, which in this case is the
         // memory address of a CallData instance.
         // The return value of Next should always be checked. This return value
-        // tells us whether there is any kind of event or cq_ is shutting down.
+        // tells us whether there is any kind of evestoint or cq_ is shutting down.
         GPR_ASSERT(cq->Next(&tag, &ok));
         GPR_ASSERT(ok);
         static_cast<asyncHandler *>(tag)->Proceed(ok);
@@ -83,7 +86,13 @@ void messageServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
 
 
 int main(int argc, char **argv) {
-    messageServiceAsyncImpl server;
+
+    int i = 0;
+    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 1;
+    uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+    uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+
+    messageServiceAsyncImpl server(workerThreads, meanWaitingTime, stdWaitingTime);
     server.Run();
 
     return 0;

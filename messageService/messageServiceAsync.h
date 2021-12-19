@@ -1,6 +1,8 @@
 #include <grpcpp/grpcpp.h>
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/ServerStats2.h"
+#include "../shared/Utils.h"
+#include "../shared/thread_pool.h"
 
 using grpc::ServerCompletionQueue;
 using grpc::CompletionQueue;
@@ -9,7 +11,7 @@ using mmb::mockDatabase;
 
 class messageServiceAsyncImpl final {
 public:
-    messageServiceAsyncImpl();
+    messageServiceAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime);
 
     ~messageServiceAsyncImpl();
 
@@ -25,6 +27,9 @@ private:
 
     std::unique_ptr<ServerCompletionQueue> cq_;
     std::unique_ptr<ServerCompletionQueue> cq2_;
+    uint32_t meanWaitingTime;
+    uint32_t stdWaitingTime;
+    thread_pool threadPool;
     mmb::messageService::AsyncService service_;
     std::unique_ptr<Server> server_;
     std::shared_ptr<ServerStats2> serverStats;

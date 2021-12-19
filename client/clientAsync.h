@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <cstdlib>
 
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>

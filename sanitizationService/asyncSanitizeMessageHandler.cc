@@ -55,12 +55,14 @@ void mockDatabase_asyncClient::Proceed(bool ok) {
 asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(sanitizationService::AsyncService *service,
                                                          ServerCompletionQueue *cq,
                                                          std::shared_ptr<grpc::ChannelInterface> channel,
-                                                         grpc::CompletionQueue *cqClient, thread_pool &threadPool,
-                                                         std::chrono::microseconds waiting_time,
+                                                         grpc::CompletionQueue *cqClient,
+                                                         thread_pool &threadPool,
+                                                         uint32_t meanWaitingTime,
+                                                         uint32_t stdWaitingTime,
                                                          std::shared_ptr<ServerStats2> serverStats)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
-          channel(std::move(channel)), threadPool(threadPool), waiting_time(waiting_time),
-          serverStats(std::move(serverStats)) {
+          channel(std::move(channel)), threadPool(threadPool), meanWaitingTime(meanWaitingTime),
+          stdWaitingTime(stdWaitingTime), serverStats(std::move(serverStats)) {
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
@@ -77,11 +79,8 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
         // Push the request into a worker thread pool just like a real DB would do
         threadPool.push_task([&]() {
 
-            auto a = waiting_time.count();
-            std::random_device dev;
-            std::mt19937 generator(dev());
-            std::normal_distribution<float> normal_dist(a, a / 2);
-            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
+            auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((t))));
 
             status_ = FINISH;
             auto asyncClient = new mockDatabase_asyncClient(channel, cqClient, this);
@@ -91,7 +90,7 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new asyncSanitizeMessageHandler(service_, cq_, channel, cqClient, threadPool, waiting_time, serverStats);
+        new asyncSanitizeMessageHandler(service_, cq_, channel, cqClient, threadPool, meanWaitingTime, stdWaitingTime, serverStats);
     } else {
         GPR_ASSERT(status_ == FINISH);
         // Once in the FINISH state, deallocate ourselves (CallData).

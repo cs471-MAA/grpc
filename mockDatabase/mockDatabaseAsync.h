@@ -1,8 +1,10 @@
 #include <grpcpp/grpcpp.h>
 #include "mock_message_board.grpc.pb.h"
+#include <random>
 #include "../shared/thread_pool.h"
 #include "../shared/HashMap.h"
 #include "../shared/ServerStats2.h"
+#include "../shared/Utils.h"
 
 using grpc::ServerCompletionQueue;
 using grpc::Server;
@@ -12,7 +14,7 @@ using mmb::mockDatabase;
 class ServerAsyncImpl final {
 public:
 
-    explicit ServerAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::microseconds waiting_time);
+    explicit ServerAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime);
 
     ~ServerAsyncImpl();
 
@@ -27,7 +29,8 @@ private:
     mockDatabase::AsyncService service_;
     std::unique_ptr<Server> server_;
     thread_pool threadPool;
-    std::chrono::microseconds waiting_time;
+    uint32_t meanWaitingTime;
+    uint32_t stdWaitingTime;
     CTSL::HashMap<std::string, std::string> hashMap;
     std::shared_ptr<ServerStats2> serverStats;
 };

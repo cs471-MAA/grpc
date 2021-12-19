@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <random>
 
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
@@ -80,11 +81,23 @@ void clientAsync::AsyncCompleteRpc() {
 }
 
 int main(int argc, char **argv) {
+
+    int i = 0;
+    uint32_t upperBound = ((argc > ++i) ? stoi(argv[i]) : 256);
+    uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+    uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 500);
+    float findRequestProportion = ((argc > ++i) ? stof(argv[i]) : 0.5);
+
+    mt19937 generator;
+    normal_distribution<float> normal_dist(meanWaitingTime, stdWaitingTime);
+    if (argc > ++i)
+        generator.seed(stoi(argv[i]));
+    
+
     // Instantiate the client. It requires a channel, out of which the actual RPCs
     // are created. This channel models a connection to an endpoint (in this case,
     // localhost at port 50051). We indicate that the channel isn't authenticated
     // (use of InsecureChannelCredentials()).
-
     std::shared_ptr<ServerStats2> serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "clientAsync.csv");
     clientAsync client(grpc::CreateChannel(M_MESSAGE_SERVICE_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()),
                        serverStats);
@@ -94,25 +107,26 @@ int main(int argc, char **argv) {
     // only calls findmessage atm
     std::thread thread_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
     std::thread thread2_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
+    
+    uniform_real_distribution<float> uni_dist(0.f, 1.f);
 
-    int sending_rate = 4000;
-    std::random_device dev;
-    std::mt19937 generator(dev());
-    std::normal_distribution<float> normal_dist(sending_rate, sending_rate / 2);
-
-    int upper_bound = 1000;
-    for (int i = 1; i < upper_bound; i++) {
-        std::string user("world " + std::to_string(i));
-        serverStats->add_entry(i, get_epoch_time_us());
-        client.findLastMessage("world " + std::to_string(i - 40), i);  // The actual RPC call!
-
-        std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
-
-        int second_request = upper_bound + i;
-        serverStats->add_entry(second_request, get_epoch_time_us());
-        client.sendMessage("world " + std::to_string(i), "world " + std::to_string(i),
-                           second_request);  // The actual RPC call!
-    }
+    uint64_t client_uid = generate_local_uid();
+    
+    for (int i = 1; i < upperBound; i++) {
+        uint64_t query_uid = get_query_uid(client_uid, i);
+        serverStats->add_entry(query_uid, get_epoch_time_us());
+        
+        float p = uni_dist(generator);
+        if (p < findRequestProportion){
+            cout << "**FIND**" << i << "\n";
+            client.findLastMessage("admin", query_uid);  // The actual RPC call!
+        } else{
+            cout << "->SEND<- " << i << "\n";
+            client.sendMessage("admin", "world " + to_string(i), query_uid);  // The actual RPC call!
+        }
+        
+        this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
+    }   
 
     std::cout << "Press control-c to quit" << std::endl << std::endl;
     thread_.join();  // blocks forever

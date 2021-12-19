@@ -2,6 +2,7 @@
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/asyncHandler.h"
 #include "../shared/ServerStats2.h"
+#include "../shared/thread_pool.h"
 
 using mmb::messageService;
 using mmb::saveMessageRequest;
@@ -62,7 +63,11 @@ public:
     * with the gRPC runtime.
      */
     asyncSendMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                            std::shared_ptr<grpc::ChannelInterface> channel, grpc::CompletionQueue *cqClient,
+                            std::shared_ptr<grpc::ChannelInterface> channel, 
+                            grpc::CompletionQueue *cqClient,
+                            thread_pool &threadPool, 
+                            uint32_t meanWaitingTime, 
+                            uint32_t stdWaitingTime,
                             std::shared_ptr<ServerStats2> serverStats);
 
     void Proceed(bool ok) override;
@@ -73,7 +78,9 @@ private:
     void FinishWithError();
 
     grpc::CompletionQueue *cqClient;
-
+    thread_pool& threadPool;
+    uint32_t meanWaitingTime;
+    uint32_t stdWaitingTime;
     const std::shared_ptr<grpc::ChannelInterface> channel;
     // The means of communication with the gRPC runtime for an asynchronous
     // server.

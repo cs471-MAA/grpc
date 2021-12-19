@@ -18,7 +18,7 @@ RUN cd /grpc \
     && cmake -DgRPC_INSTALL=ON \
       -DgRPC_BUILD_TESTS=OFF \
       ../.. \
-    && make -j 4 \
+    && make -j 6 \
     && make install
 
 # clean
