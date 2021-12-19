@@ -10,23 +10,20 @@ endif
 set shortmess=aoO
 argglobal
 %argdel
-edit Makefile
+set stal=2
+tabnew
+tabrewind
+edit .gitignore
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
 wincmd _ | wincmd |
 vsplit
-wincmd _ | wincmd |
-vsplit
-2wincmd h
+1wincmd h
 wincmd w
 wincmd _ | wincmd |
 split
-wincmd _ | wincmd |
-split
-2wincmd k
-wincmd w
-wincmd w
+1wincmd k
 wincmd w
 let &splitbelow = s:save_splitbelow
 let &splitright = s:save_splitright
@@ -37,18 +34,15 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe 'vert 1resize ' . ((&columns * 28 + 113) / 226)
-exe '2resize ' . ((&lines * 16 + 26) / 52)
-exe 'vert 2resize ' . ((&columns * 98 + 113) / 226)
-exe '3resize ' . ((&lines * 16 + 26) / 52)
-exe 'vert 3resize ' . ((&columns * 98 + 113) / 226)
-exe '4resize ' . ((&lines * 15 + 26) / 52)
-exe 'vert 4resize ' . ((&columns * 98 + 113) / 226)
-exe 'vert 5resize ' . ((&columns * 98 + 113) / 226)
+exe 'vert 1resize ' . ((&columns * 28 + 119) / 238)
+exe '2resize ' . ((&lines * 26 + 29) / 58)
+exe 'vert 2resize ' . ((&columns * 209 + 119) / 238)
+exe '3resize ' . ((&lines * 27 + 29) / 58)
+exe 'vert 3resize ' . ((&columns * 209 + 119) / 238)
 argglobal
 enew
 file NERD_tree_1
-balt benchmark.dockerfile
+balt term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -57,48 +51,6 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal nofen
-wincmd w
-argglobal
-balt Makefile
-setlocal fdm=manual
-setlocal fde=0
-setlocal fmr={{{,}}}
-setlocal fdi=#
-setlocal fdl=0
-setlocal fml=1
-setlocal fdn=20
-setlocal nofen
-silent! normal! zE
-let &fdl = &fdl
-let s:l = 5 - ((4 * winheight(0) + 8) / 16)
-if s:l < 1 | let s:l = 1 | endif
-keepjumps exe s:l
-normal! zt
-keepjumps 5
-normal! 0
-wincmd w
-argglobal
-if bufexists("benchmark.dockerfile") | buffer benchmark.dockerfile | else | edit benchmark.dockerfile | endif
-if &buftype ==# 'terminal'
-  silent file benchmark.dockerfile
-endif
-balt grpc.dockerfile
-setlocal fdm=manual
-setlocal fde=0
-setlocal fmr={{{,}}}
-setlocal fdi=#
-setlocal fdl=0
-setlocal fml=1
-setlocal fdn=20
-setlocal nofen
-silent! normal! zE
-let &fdl = &fdl
-let s:l = 1 - ((0 * winheight(0) + 8) / 16)
-if s:l < 1 | let s:l = 1 | endif
-keepjumps exe s:l
-normal! zt
-keepjumps 1
-normal! 023|
 wincmd w
 argglobal
 if bufexists("term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh") | buffer term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh | else | edit term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh | endif
@@ -114,19 +66,15 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal nofen
-let s:l = 266 - ((14 * winheight(0) + 7) / 15)
+let s:l = 10026 - ((25 * winheight(0) + 13) / 26)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 266
-normal! 029|
+keepjumps 10026
+normal! 035|
 wincmd w
 argglobal
-if bufexists("README.md") | buffer README.md | else | edit README.md | endif
-if &buftype ==# 'terminal'
-  silent file README.md
-endif
-balt benchmark.dockerfile
+balt term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -137,28 +85,91 @@ setlocal fdn=20
 setlocal nofen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 10 - ((9 * winheight(0) + 24) / 49)
+let s:l = 2 - ((1 * winheight(0) + 13) / 27)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 10
-normal! 02|
+keepjumps 2
+normal! 010|
 wincmd w
-4wincmd w
-exe 'vert 1resize ' . ((&columns * 28 + 113) / 226)
-exe '2resize ' . ((&lines * 16 + 26) / 52)
-exe 'vert 2resize ' . ((&columns * 98 + 113) / 226)
-exe '3resize ' . ((&lines * 16 + 26) / 52)
-exe 'vert 3resize ' . ((&columns * 98 + 113) / 226)
-exe '4resize ' . ((&lines * 15 + 26) / 52)
-exe 'vert 4resize ' . ((&columns * 98 + 113) / 226)
-exe 'vert 5resize ' . ((&columns * 98 + 113) / 226)
+2wincmd w
+exe 'vert 1resize ' . ((&columns * 28 + 119) / 238)
+exe '2resize ' . ((&lines * 26 + 29) / 58)
+exe 'vert 2resize ' . ((&columns * 209 + 119) / 238)
+exe '3resize ' . ((&lines * 27 + 29) / 58)
+exe 'vert 3resize ' . ((&columns * 209 + 119) / 238)
+tabnext
+edit docker-compose.yml
+let s:save_splitbelow = &splitbelow
+let s:save_splitright = &splitright
+set splitbelow splitright
+wincmd _ | wincmd |
+vsplit
+1wincmd h
+wincmd w
+let &splitbelow = s:save_splitbelow
+let &splitright = s:save_splitright
+wincmd t
+let s:save_winminheight = &winminheight
+let s:save_winminwidth = &winminwidth
+set winminheight=0
+set winheight=1
+set winminwidth=0
+set winwidth=1
+exe 'vert 1resize ' . ((&columns * 31 + 119) / 238)
+exe 'vert 2resize ' . ((&columns * 206 + 119) / 238)
+argglobal
+enew
+file NERD_tree_2
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal nofen
+wincmd w
+argglobal
+balt ~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/async-rpc-fbthrift/docker-compose.yml
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal nofen
+silent! normal! zE
+let &fdl = &fdl
+let s:l = 3 - ((2 * winheight(0) + 27) / 54)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 3
+normal! 018|
+wincmd w
+exe 'vert 1resize ' . ((&columns * 31 + 119) / 238)
+exe 'vert 2resize ' . ((&columns * 206 + 119) / 238)
 tabnext 1
-badd +10 Makefile
-badd +3 benchmark.dockerfile
-badd +18 grpc.dockerfile
-badd +1 term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh
-badd +0 README.md
+set stal=1
+badd +5 Makefile
+badd +10 benchmark.dockerfile
+badd +0 grpc.dockerfile
+badd +10054 term://~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc//8825:/usr/bin/zsh
+badd +13 README.md
+badd +85 common.cmake
+badd +66 CMakeLists.txt
+badd +3 .dockerignore
+badd +0 .gitignore
+badd +0 ~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/async-rpc-fbthrift/docker-compose.yml
+badd +0 docker-compose.yml
+badd +16 mockDatabase/mockDatabaseAsync.h
+badd +1 mockDatabase/mockDatabaseAsync.cc
+badd +58 mockDatabase/asyncFindLastMessageHandler.h
+badd +19 shared/consts.h
+badd +10 sanitizationService/sanitizationServiceAsync.cc
+badd +1 ~/Desktop/EPFL/3_-_Advanced_multiprocessor_architecture/proj/grpc
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
   silent exe 'bwipe ' . s:wipebuf
 endif

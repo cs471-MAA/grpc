@@ -4,6 +4,11 @@
 #include "asyncSendMessageHandler.h"
 #include "../shared/consts.h"
 
+
+messageServiceAsyncImpl::messageServiceAsyncImpl() {
+    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "messageServiceAsync.csv");
+}
+
 messageServiceAsyncImpl::~messageServiceAsyncImpl() {
     server_->Shutdown();
     // Always shutdown the completion queue after the server.
@@ -43,8 +48,8 @@ void messageServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
     std::thread threadClient = std::thread(&messageServiceAsyncImpl::HandleChannel, cqClient);
 
     // Spawn a new CallData instance to serve new clients.
-    new asyncFindLastMessageHandler(&service_, cq, DBchannel, cqClient);
-    new asyncSendMessageHandler(&service_, cq, Sanitchannel, cqClient);
+    new asyncFindLastMessageHandler(&service_, cq, DBchannel, cqClient, serverStats);
+    new asyncSendMessageHandler(&service_, cq, Sanitchannel, cqClient, serverStats);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {

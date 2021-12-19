@@ -3,11 +3,15 @@
 #include "asyncSanitizeMessageHandler.h"
 #include "../shared/consts.h"
 
+sanitizationServiceAsyncImpl::sanitizationServiceAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::microseconds waiting_time)
+: threadPool(workerThreads), waiting_time(waiting_time){
+    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "sanitServiceAsync.csv");
+}
+
 sanitizationServiceAsyncImpl::~sanitizationServiceAsyncImpl() {
     server_->Shutdown();
     // Always shutdown the completion queue after the server.
     cq_->Shutdown();
-    cq2_->Shutdown();
 }
 
 void sanitizationServiceAsyncImpl::Run() {
@@ -22,27 +26,23 @@ void sanitizationServiceAsyncImpl::Run() {
     // Get hold of the completion queue used for the asynchronous communication
     // with the gRPC runtime.
     cq_ = builder.AddCompletionQueue();
-    cq2_ = builder.AddCompletionQueue();
     // Finally assemble the server.
     server_ = builder.BuildAndStart();
     std::cout << "Server listening on " << server_address << std::endl;
 
     // Proceed to the server's main loop.
     std::thread thread1 = std::thread(&sanitizationServiceAsyncImpl::HandleRpcs, this, cq_.get());
-    std::thread thread2 = std::thread(&sanitizationServiceAsyncImpl::HandleRpcs, this, cq2_.get());
     thread1.join();  // blocks forever
-    thread2.join();  // blocks forever
 }
 
 void sanitizationServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
-    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel("localhost:50051",
-                                                                 grpc::InsecureChannelCredentials());
+    std::shared_ptr<grpc::Channel> DBchannel = grpc::CreateChannel(M_MOCK_DATABASE_SOCKET_ADDRESS,grpc::InsecureChannelCredentials());
 
     auto cqClient = new grpc::CompletionQueue();
     std::thread threadClient = std::thread(&sanitizationServiceAsyncImpl::HandleChannel, cqClient);
 
     // Spawn a new CallData instance to serve new clients.
-    new asyncSanitizeMessageHandler(&service_, cq, channel, cqClient);
+    new asyncSanitizeMessageHandler(&service_, cq, DBchannel, cqClient, threadPool, waiting_time, serverStats);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -74,7 +74,10 @@ void sanitizationServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
 
 
 int main(int argc, char **argv) {
-    sanitizationServiceAsyncImpl server;
+    unsigned long workerThreads = 10;
+    std::chrono::microseconds waitingTime(100);
+
+    sanitizationServiceAsyncImpl server(workerThreads, waitingTime);
     server.Run();
 
     return 0;

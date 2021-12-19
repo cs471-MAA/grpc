@@ -4,7 +4,8 @@ WORKDIR /app
 COPY . /app
 
 RUN cd /app/ \
-    && mkdir -p build \
-    && cd build \
-    && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON .. \
+    && mkdir -p cmake/build \
+    && cd cmake/build \
+    && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../.. \
     && make -j 4
+

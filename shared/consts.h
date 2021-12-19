@@ -1,8 +1,10 @@
 
 #ifdef LOCALHOST
 #define M_GET_SOCKET_ADDRESS(ADDRESS, PORT) "0.0.0.0:" PORT
+#define STATS_FILES_DIR "/home/adrien/Documents/epfl/MA/cs-471/grpc/stats_files/"
 #else
 #define M_GET_SOCKET_ADDRESS(ADDRESS, PORT) ADDRESS ":" PORT
+#define STATS_FILES_DIR "/app/src/build/stats_files/"
 #endif
 
 #define MOCK_DATABASE_HOSTNAME "mock-database"

@@ -1,6 +1,7 @@
 
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/asyncHandler.h"
+#include "../shared/ServerStats2.h"
 
 using mmb::messageService;
 using mmb::findLastMessageRequest;
@@ -20,7 +21,7 @@ public:
 
     // Assembles the client's payload, sends it and presents the response back
     // from the server.
-    void findLastMessage(const std::string &cliend_id);
+    void findLastMessage(findLastMessageRequest &request);
 
     // Will be called by the HandleChannel thread because of the cq_ variable this class use is the one that's looped on
     // in the HandleChannel function
@@ -40,7 +41,7 @@ private:
     // Storage for the status of the RPC upon completion.
     Status status;
     std::unique_ptr<grpc::ClientAsyncResponseReader<findLastMessageReply>> rpc;
-    findLastMessageRequest request;
+
 
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
@@ -60,7 +61,8 @@ public:
     * with the gRPC runtime.
      */
     asyncFindLastMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                                std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient);
+                                std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient,
+                                std::shared_ptr<ServerStats2> serverStats);
 
     void Proceed(bool ok) override;
 
@@ -82,13 +84,12 @@ private:
     // client.
     ServerContext ctx_;
 
-    // What we get from the client.
     findLastMessageRequest request_;
-
     // The means to get back to the client.
     ServerAsyncResponseWriter<findLastMessageReply> responder_;
 
     // Let's implement a tiny state machine with the following states.
     enum CallStatus {PROCESS, FINISH};
     std::atomic<CallStatus> status_;  // The current serving state.
+    std::shared_ptr<ServerStats2> serverStats;
 };
