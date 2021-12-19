@@ -39,7 +39,7 @@ sanitizationServiceImpl::sanitize_message(::grpc::ServerContext *context, const 
 void RunServer(unsigned long workerThreads,
                uint32_t meanWaitingTime,
                uint32_t stdWaitingTime) {
-    std::string server_address(M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS);
+    std::string server_address(M_SANITIZATION_SERVICE_SYNC_SOCKET_ADDRESS);
     sanitizationServiceImpl service(meanWaitingTime, stdWaitingTime);
 
     grpc::EnableDefaultHealthCheckService(true);
@@ -61,7 +61,7 @@ void RunServer(unsigned long workerThreads,
 
 int main(int argc, char** argv) {
     int i = 0;
-    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 1;
+    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 2;
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 3000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
     RunServer(workerThreads, meanWaitingTime, stdWaitingTime);
