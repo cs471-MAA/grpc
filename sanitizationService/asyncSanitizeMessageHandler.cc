@@ -87,6 +87,7 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
     } else {
         GPR_ASSERT(status_ == FINISH);
         // Once in the FINISH state, deallocate ourselves (CallData).
+        serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
         delete this;
     }
 }
@@ -98,7 +99,6 @@ void asyncSanitizeMessageHandler::Finish(const saveMessageReply &reply) {
     // the event.
     status_ = FINISH;
     // Thread safe
-    serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
     responder_.Finish(reply, Status::OK, this);
 }
 
@@ -108,6 +108,5 @@ void asyncSanitizeMessageHandler::FinishWithError() {
     // the event.
     status_ = FINISH;
     // Thread safe
-    serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
     responder_.FinishWithError(Status::CANCELLED, this);
 }

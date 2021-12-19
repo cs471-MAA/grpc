@@ -12,7 +12,9 @@ using grpc::ServerBuilder;
 
 
 ServerAsyncImpl::ServerAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::microseconds waiting_time)
-:threadPool(workerThreads), waiting_time(waiting_time){}
+:threadPool(workerThreads), waiting_time(waiting_time){
+    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "mockDatabaseAsync.csv");
+}
 
 ServerAsyncImpl::~ServerAsyncImpl() {
     server_->Shutdown();
@@ -42,8 +44,8 @@ void ServerAsyncImpl::Run() {
 
 void ServerAsyncImpl::HandleRpcs() {
     // Spawn a new CallData instance to serve new clients.
-    new asyncFindLastMessageHandler(&service_, cq_.get(), threadPool, waiting_time, hashMap);
-    new asyncSaveMessageHandler(&service_, cq_.get(), threadPool, waiting_time, hashMap);
+    new asyncFindLastMessageHandler(&service_, cq_.get(), threadPool, waiting_time, hashMap, serverStats);
+    new asyncSaveMessageHandler(&service_, cq_.get(), threadPool, waiting_time, hashMap, serverStats);
     void* tag;  // uniquely identifies a request.
     bool ok;
     while (true) {

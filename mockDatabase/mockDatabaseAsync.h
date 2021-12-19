@@ -2,6 +2,7 @@
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/thread_pool.h"
 #include "../shared/HashMap.h"
+#include "../shared/ServerStats2.h"
 
 using grpc::ServerCompletionQueue;
 using grpc::Server;
@@ -28,4 +29,5 @@ private:
     thread_pool threadPool;
     std::chrono::microseconds waiting_time;
     CTSL::HashMap<std::string, std::string> hashMap;
+    std::shared_ptr<ServerStats2> serverStats;
 };

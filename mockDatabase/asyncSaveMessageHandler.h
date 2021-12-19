@@ -1,9 +1,12 @@
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
 
+#include <utility>
+
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/thread_pool.h"
 #include "../shared/asyncHandler.h"
+#include "../shared/Utils.h"
 
 using grpc::Status;
 using grpc::ServerAsyncResponseWriter;
@@ -22,9 +25,10 @@ public:
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
     asyncSaveMessageHandler(mockDatabase::AsyncService* service, ServerCompletionQueue* cq, thread_pool &threadPool,
-                            std::chrono::microseconds waiting_time, CTSL::HashMap<std::string, std::string> &hashMap)
+                            std::chrono::microseconds waiting_time, CTSL::HashMap<std::string, std::string> &hashMap,
+                            std::shared_ptr<ServerStats2> serverStats)
             : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), threadPool(threadPool),
-              waiting_time(waiting_time), hashMap(hashMap){
+              waiting_time(waiting_time), hashMap(hashMap), serverStats(std::move(serverStats)){
 
         // As part of the initial CREATE state, we *request* that the system
         // start processing SayHello requests. In this request, "this" acts are
@@ -37,6 +41,7 @@ public:
 
     void Proceed(bool ok) override {
         if (status_ == PROCESS) {
+            serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
             // The actual processing.
 
@@ -52,9 +57,10 @@ public:
             // Spawn a new CallData instance to serve new clients while we process
             // the one for this CallData. The instance will deallocate itself as
             // part of its FINISH state.
-            new asyncSaveMessageHandler(service_, cq_, threadPool, waiting_time, hashMap);
+            new asyncSaveMessageHandler(service_, cq_, threadPool, waiting_time, hashMap, serverStats);
         } else {
             GPR_ASSERT(status_ == FINISH);
+            serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
             // Once in the FINISH state, deallocate ourselves (CallData).
             delete this;
         }
@@ -86,4 +92,5 @@ private:
     thread_pool& threadPool;
     std::chrono::microseconds waiting_time;
     CTSL::HashMap<std::string, std::string> &hashMap;
+    std::shared_ptr<ServerStats2> serverStats;
 };
