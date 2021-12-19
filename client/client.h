@@ -45,7 +45,7 @@ public:
             serverStats->add_entry(query_uid, get_epoch_time_us());
             return reply.message();
         } else {
-            std::cout << status.error_code() << ": " << status.error_message()
+            std::cout << "ERROR" <<status.error_code() << ": " << status.error_message()
                       << std::endl;
             return "RPC failed";
         }
@@ -74,7 +74,7 @@ public:
             serverStats->add_entry(query_uid, get_epoch_time_us());
             return reply.ok();
         } else {
-            std::cout << status.error_code() << ": " << status.error_message()
+            std::cout << "ERROR" << status.error_code() << ": " << status.error_message()
                       << std::endl;
             return "RPC failed";
         }

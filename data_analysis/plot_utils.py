@@ -5,17 +5,24 @@ import numpy as np
 import pandas as pd
 import os
 
-DATA_DIR = "container_files/"
-CLIENT_FN = "clientAsync.csv"
-MSGSERV_FN = "messageServiceAsync.csv"
-SANITSERV_FN = "sanitServiceAsync.csv"
-MOCKDATA_FN =  "mockDatabaseAsync.csv"
+DATA_DIR = "container_files/default/"
+SYNC_CLIENT_FN = "clientSync.csv"
+SYNC_MSGSERV_FN = "messageServiceSync.csv"
+SYNC_SANITSERV_FN = "sanitServiceSync.csv"
+SYNC_MOCKDATA_FN =  "mockDatabaseSync.csv"
+ASYNC_CLIENT_FN = "clientAsync.csv"
+ASYNC_MSGSERV_FN = "messageServiceAsync.csv"
+ASYNC_SANITSERV_FN = "sanitServiceAsync.csv"
+ASYNC_MOCKDATA_FN =  "mockDatabaseAsync.csv"
 DF_NAMES = ["query_uid", "epoch_time"]
 DF_TYPES = {DF_NAMES[0]:"Uint64", DF_NAMES[1]:"Uint64"}
 CLIENT_UID_SHIFT = 28
 QUERY_INDEX_MASK = 0xFFFFFFF
 
 ################### STILL IN CONSTRUCTION, used for tests and design ###################
+
+def find_element(x, i):
+    return np.nan if x.shape[0] <= i else x.values[i]
 
 def treat_data(filepath, time_start=None, time_factor=1000.0, verbose=False):
     df = pd.read_csv(filepath, names=DF_NAMES, dtype=DF_TYPES)
@@ -28,10 +35,10 @@ def treat_data(filepath, time_start=None, time_factor=1000.0, verbose=False):
     df["epoch_time"] /= time_factor
     df["client_uid"] = np.right_shift(df["query_uid"], CLIENT_UID_SHIFT)
     df["query_index"] = df["query_uid"] & QUERY_INDEX_MASK
-    df.sort_values(["query_uid", "epoch_time"])
+    df = df.sort_values(["query_uid", "epoch_time"])
     # df = df.groupby(["query_uid", "client_uid", "query_index"]).agg(['min', 'max'])
-    df = df.groupby(["query_uid", "client_uid", "query_index"]).agg([lambda x: x.to_numpy()[0],
-                                                                     lambda x: np.nan if x.shape[0] < 2 else x.to_numpy()[1]])
+    df = df.groupby(["query_uid", "client_uid", "query_index"]).agg([lambda x: find_element(x, 0),
+                                                                     lambda x: find_element(x, 1)])
     df.columns = df.columns.set_levels(['start','end'], level=1)
     df.columns = df.columns.get_level_values(1)
     df = df.reset_index()
@@ -42,11 +49,23 @@ def treat_data(filepath, time_start=None, time_factor=1000.0, verbose=False):
     else:
         return df
 
-def get_data(dirpath, time_factor=1000.0, as_dict=True, verbose=False):
-    client_df, time_start = treat_data(dirpath + CLIENT_FN, time_factor=time_factor)
-    msgserv_df = treat_data(dirpath + MSGSERV_FN, time_start, time_factor=time_factor)
-    sanitserv_df = treat_data(dirpath +SANITSERV_FN, time_start, time_factor=time_factor)
-    mockdata_df = treat_data(dirpath + MOCKDATA_FN, time_start, time_factor=time_factor)
+def get_actors_df(dirpath, async_data=True, time_factor=1000.0):
+    
+    if async_data:
+        client_df, time_start = treat_data(dirpath + ASYNC_CLIENT_FN, time_factor=time_factor)
+        msgserv_df = treat_data(dirpath + ASYNC_MSGSERV_FN, time_start, time_factor=time_factor)
+        sanitserv_df = treat_data(dirpath + ASYNC_SANITSERV_FN, time_start, time_factor=time_factor)
+        mockdata_df = treat_data(dirpath + ASYNC_MOCKDATA_FN, time_start, time_factor=time_factor)
+    else:
+        client_df, time_start = treat_data(dirpath + SYNC_CLIENT_FN, time_factor=time_factor)
+        msgserv_df = treat_data(dirpath + SYNC_MSGSERV_FN, time_start, time_factor=time_factor)
+        sanitserv_df = treat_data(dirpath +SYNC_SANITSERV_FN, time_start, time_factor=time_factor)
+        mockdata_df = treat_data(dirpath + SYNC_MOCKDATA_FN, time_start, time_factor=time_factor)
+    
+    return client_df, msgserv_df, sanitserv_df, mockdata_df
+    
+def get_data(dirpath, async_data=True, time_factor=1000.0, as_dict=True, verbose=False):
+    client_df, msgserv_df, sanitserv_df, mockdata_df = get_actors_df(dirpath, async_data, time_factor)
 
     all = client_df.merge(msgserv_df, how='outer', on=["query_uid", "client_uid", "query_index"], suffixes=("_client", "_msg"))
     all = all.merge(sanitserv_df, how='outer', on=["query_uid", "client_uid", "query_index"], suffixes=("", "_sanit"))
@@ -139,14 +158,17 @@ def plot_tail_latency(data, percs=[90, 99, 99.9], cmap="tab10",ax=None):
     return ax
 
 
-def main(data_dirpath, verbose=False):
+def main(data_dirpath, async_data=True, verbose=False):
 
-    all = get_data(data_dirpath, verbose=verbose)
+    all = get_data(data_dirpath, async_data=async_data, verbose=verbose)
     
     for client_uid, df in all.items():
         plot_calls_cascade(client_uid, df, verbose=verbose)
     
-    plt.show()
+    
 
 if __name__ == "__main__":
-    main(DATA_DIR, verbose=True)
+    main(DATA_DIR, async_data=True, verbose=True)
+    main(DATA_DIR, async_data=False, verbose=True)
+    
+    plt.show()
