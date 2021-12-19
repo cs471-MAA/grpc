@@ -3,19 +3,25 @@
 //
 
 #include "messageService.h"
-#include "../shared/consts.h"
+#include "../../shared/consts.h"
 
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
+#include <grpcpp/resource_quota.h>
+#include <thread>
 
 using mmb::findLastMessageRequest;
 using mmb::findLastMessageReply;
 using mmb::saveMessageRequest;
 using mmb::saveMessageReply;
+using namespace std;
 
-
-messageServiceImpl::messageServiceImpl() {
+messageServiceImpl::messageServiceImpl(uint32_t meanWaitingTime,
+                                       uint32_t stdWaitingTime):
+    meanWaitingTime(meanWaitingTime), 
+    stdWaitingTime(stdWaitingTime)
+{
     mockDatabaseStub_ = mmb::mockDatabase::NewStub(grpc::CreateChannel(MOCK_DATABASE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
     sanitizationServiceStub_ = mmb::sanitizationService::NewStub(grpc::CreateChannel(M_SANITIZATION_SERVICE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
 }
@@ -28,7 +34,11 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     // the server and/or tweak certain RPC behaviors.
     grpc::ClientContext clientContext;
 
-    return mockDatabaseStub_->findLastMessage(&clientContext, *request, response);
+    auto result = mockDatabaseStub_->findLastMessage(&clientContext, *request, response);
+
+    this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
+
+    return result;
 }
 
 ::grpc::Status messageServiceImpl::sendMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
@@ -37,14 +47,19 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     grpc::ClientContext clientContext;
+    auto result = sanitizationServiceStub_->sanitize_message(&clientContext, *request, response);
 
-    return sanitizationServiceStub_->sanitize_message(&clientContext, *request, response);
+    this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
+
+    return result;
 }
 
 
-void RunServer() {
-    std::string server_address(M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS);
-    messageServiceImpl service;
+void RunServer(unsigned long workerThreads,
+               uint32_t meanWaitingTime,
+               uint32_t stdWaitingTime) {
+    string server_address(M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS);
+    messageServiceImpl service(meanWaitingTime, stdWaitingTime);
 
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -54,8 +69,14 @@ void RunServer() {
     // Register "service" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *synchronous* service.
     builder.RegisterService(&service);
-    // Finally assemble the server.
+
+    auto r = grpc::ResourceQuota();
+    builder.SetResourceQuota(r.SetMaxThreads(workerThreads));
+    
+    // Finally assemble the server
+
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+    
     std::cout << "Server listening on " << server_address << std::endl;
 
     // Wait for the server to shutdown. Note that some other thread must be
@@ -64,7 +85,12 @@ void RunServer() {
 }
 
 int main(int argc, char** argv) {
-    RunServer();
+    int i = 0;
+    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 1;
+    uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+    uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 500);
+
+    RunServer(workerThreads, meanWaitingTime, stdWaitingTime);
 
     return 0;
 }

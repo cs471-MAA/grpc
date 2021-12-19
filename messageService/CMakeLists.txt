@@ -10,8 +10,8 @@ target_link_libraries(messageServiceAsync
         ${_PROTOBUF_LIBPROTOBUF})
 
 
-add_executable(messageService shared/consts.h messageService/sync/messageService.h messageService/sync/messageService.cpp)
-target_link_libraries(messageServiceAsync
+add_executable(messageService shared/consts.h shared/Utils.h shared/Utils.cc messageService/sync/messageService.h messageService/sync/messageService.cpp)
+target_link_libraries(messageService
         hw_grpc_proto
         ${_REFLECTION}
         ${_GRPC_GRPCPP}
