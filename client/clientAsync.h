@@ -33,8 +33,9 @@ class clientAsync {
 public:
     explicit clientAsync(const std::shared_ptr<Channel> &channel, std::shared_ptr<ServerStats2> serverStats);
 
-    void findLastMessage(const std::string& cliend_id, uint64_t query_uid = 0);
-    void sendMessage(const std::string& cliend_id, const std::string& message, uint64_t query_uid = 0);
+    void findLastMessage(const std::string &cliend_id, uint64_t query_uid = 0);
+
+    void sendMessage(const std::string &cliend_id, const std::string &message, uint64_t query_uid = 0);
 
     /** Loop while listening for completed responses.
      ** Prints out the response from the server.
@@ -44,7 +45,9 @@ public:
 private:
     class AsC_findLastMessageCall : public asyncHandler {
     public:
-        explicit AsC_findLastMessageCall(std::shared_ptr<ServerStats2> serverStats): serverStats(std::move(serverStats)){}
+        explicit AsC_findLastMessageCall(std::shared_ptr<ServerStats2> serverStats) : serverStats(
+                std::move(serverStats)) {}
+
         // Container for the data we expect from the server.
         findLastMessageReply reply;
 
@@ -57,10 +60,10 @@ private:
 
         std::unique_ptr<ClientAsyncResponseReader<findLastMessageReply>> response_reader;
 
-        void Proceed(bool ok) override{
-            if(ok){
+        void Proceed(bool ok) override {
+            if (ok) {
                 std::cout << "findMessage: " << reply.message() << std::endl;
-            }else{
+            } else {
                 std::cout << "findMessage Error: " << status.error_details() << std::endl;
             }
             serverStats->add_entry(reply.query_uid(), get_epoch_time_us());
@@ -73,7 +76,8 @@ private:
     // struct for keeping state and data information
     class AsC_saveMessageCall : public asyncHandler {
     public:
-        explicit AsC_saveMessageCall(std::shared_ptr<ServerStats2> serverStats): serverStats(std::move(serverStats)){}
+        explicit AsC_saveMessageCall(std::shared_ptr<ServerStats2> serverStats) : serverStats(std::move(serverStats)) {}
+
         // Container for the data we expect from the server.
         saveMessageReply reply;
 
@@ -86,12 +90,13 @@ private:
 
         std::unique_ptr<ClientAsyncResponseReader<saveMessageReply>> response_reader;
 
-        void Proceed(bool ok) override{
-            if(!ok){
+        void Proceed(bool ok) override {
+            if (!ok) {
                 std::cout << "saveMessage Error: " << status.error_details() << std::endl;
             }
             serverStats->add_entry(reply.query_uid(), get_epoch_time_us());
         }
+
     private:
         std::shared_ptr<ServerStats2> serverStats;
     };

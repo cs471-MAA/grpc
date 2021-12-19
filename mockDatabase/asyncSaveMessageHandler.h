@@ -25,18 +25,18 @@ public:
     // Take in the "service" instance (in this case representing an asynchronous
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
-    asyncSaveMessageHandler(mockDatabase::AsyncService* service, ServerCompletionQueue* cq, thread_pool &threadPool,
+    asyncSaveMessageHandler(mockDatabase::AsyncService *service, ServerCompletionQueue *cq, thread_pool &threadPool,
                             std::chrono::microseconds waiting_time, CTSL::HashMap<std::string, std::string> &hashMap,
                             std::shared_ptr<ServerStats2> serverStats)
             : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), threadPool(threadPool),
-              waiting_time(waiting_time), hashMap(hashMap), serverStats(std::move(serverStats)){
+              waiting_time(waiting_time), hashMap(hashMap), serverStats(std::move(serverStats)) {
 
         // As part of the initial CREATE state, we *request* that the system
         // start processing SayHello requests. In this request, "this" acts are
         // the tag uniquely identifying the request (so that different CallData
         // instances can serve different requests concurrently), in this case
         // the memory address of this CallData instance.
-        service_->RequestsaveMessage(&ctx_, &request_, &responder_, cq_, cq_,this);
+        service_->RequestsaveMessage(&ctx_, &request_, &responder_, cq_, cq_, this);
     }
 
     void Proceed(bool ok) override {
@@ -46,7 +46,7 @@ public:
             // The actual processing.
             reply_.set_query_uid(request_.query_uid());
             // Push the request into a worker thread pool just like a real DB would do
-            threadPool.push_task([&] (){
+            threadPool.push_task([&]() {
                 hashMap.insert(request_.client_id(), request_.message());
 
                 auto a = waiting_time.count();
@@ -74,9 +74,9 @@ public:
 private:
     // The means of communication with the gRPC runtime for an asynchronous
     // server.
-    mockDatabase::AsyncService* service_;
+    mockDatabase::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
-    ServerCompletionQueue* cq_;
+    ServerCompletionQueue *cq_;
     // Context for the rpc, allowing to tweak aspects of it such as the use
     // of compression, authentication, as well as to send metadata back to the
     // client.
@@ -91,10 +91,12 @@ private:
     ServerAsyncResponseWriter<saveMessageReply> responder_;
 
     // Let's implement a tiny state machine with the following states.
-    enum CallStatus { PROCESS, FINISH };
+    enum CallStatus {
+        PROCESS, FINISH
+    };
     std::atomic<CallStatus> status_; // The current serving state.
 
-    thread_pool& threadPool;
+    thread_pool &threadPool;
     std::chrono::microseconds waiting_time;
     CTSL::HashMap<std::string, std::string> &hashMap;
     std::shared_ptr<ServerStats2> serverStats;

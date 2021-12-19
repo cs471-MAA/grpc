@@ -33,8 +33,7 @@
 /**
  * @brief A C++17 thread pool class. The user submits tasks to be executed into a queue. Whenever a thread becomes available, it pops a task from the queue and executes it. Each task is automatically assigned a future, which can be used to wait for the task to finish executing and/or obtain its eventual return value.
  */
-class thread_pool
-{
+class thread_pool {
     typedef std::uint_fast32_t ui32;
     typedef std::uint_fast64_t ui64;
 
@@ -49,16 +48,15 @@ public:
      * @param _thread_count The number of threads to use. The default value is the total number of hardware threads available, as reported by the implementation. With a hyperthreaded CPU, this will be twice the number of CPU cores. If the argument is zero, the default value will be used instead.
      */
     thread_pool(const ui32 &_thread_count = std::thread::hardware_concurrency())
-            : thread_count(_thread_count ? _thread_count : std::thread::hardware_concurrency()), threads(new std::thread[_thread_count ? _thread_count : std::thread::hardware_concurrency()])
-    {
+            : thread_count(_thread_count ? _thread_count : std::thread::hardware_concurrency()),
+              threads(new std::thread[_thread_count ? _thread_count : std::thread::hardware_concurrency()]) {
         create_threads();
     }
 
     /**
      * @brief Destruct the thread pool. Waits for all tasks to complete, then destroys all threads. Note that if the variable paused is set to true, then any tasks still in the queue will never be executed.
      */
-    ~thread_pool()
-    {
+    ~thread_pool() {
         wait_for_tasks();
         running = false;
         destroy_threads();
@@ -73,8 +71,7 @@ public:
      *
      * @return The number of queued tasks.
      */
-    ui64 get_tasks_queued() const
-    {
+    ui64 get_tasks_queued() const {
         const std::scoped_lock lock(queue_mutex);
         return tasks.size();
     }
@@ -84,9 +81,8 @@ public:
      *
      * @return The number of running tasks.
      */
-    ui32 get_tasks_running() const
-    {
-        return tasks_total - (ui32)get_tasks_queued();
+    ui32 get_tasks_running() const {
+        return tasks_total - (ui32) get_tasks_queued();
     }
 
     /**
@@ -94,8 +90,7 @@ public:
      *
      * @return The total number of tasks.
      */
-    ui32 get_tasks_total() const
-    {
+    ui32 get_tasks_total() const {
         return tasks_total;
     }
 
@@ -104,8 +99,7 @@ public:
      *
      * @return The number of threads.
      */
-    ui32 get_thread_count() const
-    {
+    ui32 get_thread_count() const {
         return thread_count;
     }
 
@@ -120,16 +114,14 @@ public:
      * @param loop The function to loop through. Will be called once per block. Should take exactly two arguments: the first index in the block and the index after the last index in the block. loop(start, end) should typically involve a loop of the form "for (T i = start; i < end; i++)".
      * @param num_blocks The maximum number of blocks to split the loop into. The default is to use the number of threads in the pool.
      */
-    template <typename T1, typename T2, typename F>
-    void parallelize_loop(const T1 &first_index, const T2 &index_after_last, const F &loop, ui32 num_blocks = 0)
-    {
+    template<typename T1, typename T2, typename F>
+    void parallelize_loop(const T1 &first_index, const T2 &index_after_last, const F &loop, ui32 num_blocks = 0) {
         typedef std::common_type_t<T1, T2> T;
-        T the_first_index = (T)first_index;
-        T last_index = (T)index_after_last;
+        T the_first_index = (T) first_index;
+        T last_index = (T) index_after_last;
         if (the_first_index == last_index)
             return;
-        if (last_index < the_first_index)
-        {
+        if (last_index < the_first_index) {
             T temp = last_index;
             last_index = the_first_index;
             the_first_index = temp;
@@ -137,27 +129,23 @@ public:
         last_index--;
         if (num_blocks == 0)
             num_blocks = thread_count;
-        ui64 total_size = (ui64)(last_index - the_first_index + 1);
-        ui64 block_size = (ui64)(total_size / num_blocks);
-        if (block_size == 0)
-        {
+        ui64 total_size = (ui64) (last_index - the_first_index + 1);
+        ui64 block_size = (ui64) (total_size / num_blocks);
+        if (block_size == 0) {
             block_size = 1;
-            num_blocks = (ui32)total_size > 1 ? (ui32)total_size : 1;
+            num_blocks = (ui32) total_size > 1 ? (ui32) total_size : 1;
         }
         std::atomic<ui32> blocks_running = 0;
-        for (ui32 t = 0; t < num_blocks; t++)
-        {
-            T start = ((T)(t * block_size) + the_first_index);
-            T end = (t == num_blocks - 1) ? last_index + 1 : ((T)((t + 1) * block_size) + the_first_index);
+        for (ui32 t = 0; t < num_blocks; t++) {
+            T start = ((T) (t * block_size) + the_first_index);
+            T end = (t == num_blocks - 1) ? last_index + 1 : ((T) ((t + 1) * block_size) + the_first_index);
             blocks_running++;
-            push_task([start, end, &loop, &blocks_running]
-                      {
-                          loop(start, end);
-                          blocks_running--;
-                      });
+            push_task([start, end, &loop, &blocks_running] {
+                loop(start, end);
+                blocks_running--;
+            });
         }
-        while (blocks_running != 0)
-        {
+        while (blocks_running != 0) {
             sleep_or_yield();
         }
     }
@@ -168,9 +156,8 @@ public:
      * @tparam F The type of the function.
      * @param task The function to push.
      */
-    template <typename F>
-    void push_task(const F &task)
-    {
+    template<typename F>
+    void push_task(const F &task) {
         tasks_total++;
         {
             const std::scoped_lock lock(queue_mutex);
@@ -187,11 +174,9 @@ public:
      * @param task The function to push.
      * @param args The arguments to pass to the function.
      */
-    template <typename F, typename... A>
-    void push_task(const F &task, const A &...args)
-    {
-        push_task([task, args...]
-                  { task(args...); });
+    template<typename F, typename... A>
+    void push_task(const F &task, const A &...args) {
+        push_task([task, args...] { task(args...); });
     }
 
     /**
@@ -199,8 +184,7 @@ public:
      *
      * @param _thread_count The number of threads to use. The default value is the total number of hardware threads available, as reported by the implementation. With a hyperthreaded CPU, this will be twice the number of CPU cores. If the argument is zero, the default value will be used instead.
      */
-    void reset(const ui32 &_thread_count = std::thread::hardware_concurrency())
-    {
+    void reset(const ui32 &_thread_count = std::thread::hardware_concurrency()) {
         bool was_paused = paused;
         paused = true;
         wait_for_tasks();
@@ -222,29 +206,23 @@ public:
      * @param args The zero or more arguments to pass to the function.
      * @return A future to be used later to check if the function has finished its execution.
      */
-    template <typename F, typename... A, typename = std::enable_if_t<std::is_void_v<std::invoke_result_t<std::decay_t<F>, std::decay_t<A>...>>>>
-    std::future<bool> submit(const F &task, const A &...args)
-    {
+    template<typename F, typename... A, typename = std::enable_if_t<std::is_void_v<std::invoke_result_t<std::decay_t<F>, std::decay_t<A>...>>>>
+    std::future<bool> submit(const F &task, const A &...args) {
         std::shared_ptr<std::promise<bool>> task_promise(new std::promise<bool>);
         std::future<bool> future = task_promise->get_future();
-        push_task([task, args..., task_promise]
-                  {
-                      try
-                      {
-                          task(args...);
-                          task_promise->set_value(true);
-                      }
-                      catch (...)
-                      {
-                          try
-                          {
-                              task_promise->set_exception(std::current_exception());
-                          }
-                          catch (...)
-                          {
-                          }
-                      }
-                  });
+        push_task([task, args..., task_promise] {
+            try {
+                task(args...);
+                task_promise->set_value(true);
+            }
+            catch (...) {
+                try {
+                    task_promise->set_exception(std::current_exception());
+                }
+                catch (...) {
+                }
+            }
+        });
         return future;
     }
 
@@ -258,45 +236,34 @@ public:
      * @param args The zero or more arguments to pass to the function.
      * @return A future to be used later to obtain the function's returned value, waiting for it to finish its execution if needed.
      */
-    template <typename F, typename... A, typename R = std::invoke_result_t<std::decay_t<F>, std::decay_t<A>...>, typename = std::enable_if_t<!std::is_void_v<R>>>
-    std::future<R> submit(const F &task, const A &...args)
-    {
+    template<typename F, typename... A, typename R = std::invoke_result_t<std::decay_t<F>, std::decay_t<A>...>, typename = std::enable_if_t<!std::is_void_v<R>>>
+    std::future<R> submit(const F &task, const A &...args) {
         std::shared_ptr<std::promise<R>> task_promise(new std::promise<R>);
         std::future<R> future = task_promise->get_future();
-        push_task([task, args..., task_promise]
-                  {
-                      try
-                      {
-                          task_promise->set_value(task(args...));
-                      }
-                      catch (...)
-                      {
-                          try
-                          {
-                              task_promise->set_exception(std::current_exception());
-                          }
-                          catch (...)
-                          {
-                          }
-                      }
-                  });
+        push_task([task, args..., task_promise] {
+            try {
+                task_promise->set_value(task(args...));
+            }
+            catch (...) {
+                try {
+                    task_promise->set_exception(std::current_exception());
+                }
+                catch (...) {
+                }
+            }
+        });
         return future;
     }
 
     /**
      * @brief Wait for tasks to be completed. Normally, this function waits for all tasks, both those that are currently running in the threads and those that are still waiting in the queue. However, if the variable paused is set to true, this function only waits for the currently running tasks (otherwise it would wait forever). To wait for a specific task, use submit() instead, and call the wait() member function of the generated future.
      */
-    void wait_for_tasks()
-    {
-        while (true)
-        {
-            if (!paused)
-            {
+    void wait_for_tasks() {
+        while (true) {
+            if (!paused) {
                 if (tasks_total == 0)
                     break;
-            }
-            else
-            {
+            } else {
                 if (get_tasks_running() == 0)
                     break;
             }
@@ -326,10 +293,8 @@ private:
     /**
      * @brief Create the threads in the pool and assign a worker to each thread.
      */
-    void create_threads()
-    {
-        for (ui32 i = 0; i < thread_count; i++)
-        {
+    void create_threads() {
+        for (ui32 i = 0; i < thread_count; i++) {
             threads[i] = std::thread(&thread_pool::worker, this);
         }
     }
@@ -337,10 +302,8 @@ private:
     /**
      * @brief Destroy the threads in the pool by joining them.
      */
-    void destroy_threads()
-    {
-        for (ui32 i = 0; i < thread_count; i++)
-        {
+    void destroy_threads() {
+        for (ui32 i = 0; i < thread_count; i++) {
             threads[i].join();
         }
     }
@@ -351,13 +314,11 @@ private:
      * @param task A reference to the task. Will be populated with a function if the queue is not empty.
      * @return true if a task was found, false if the queue is empty.
      */
-    bool pop_task(std::function<void()> &task)
-    {
+    bool pop_task(std::function<void()> &task) {
         const std::scoped_lock lock(queue_mutex);
         if (tasks.empty())
             return false;
-        else
-        {
+        else {
             task = std::move(tasks.front());
             tasks.pop();
             return true;
@@ -368,8 +329,7 @@ private:
      * @brief Sleep for sleep_duration microseconds. If that variable is set to zero, yield instead.
      *
      */
-    void sleep_or_yield()
-    {
+    void sleep_or_yield() {
         if (sleep_duration)
             std::this_thread::sleep_for(std::chrono::microseconds(sleep_duration));
         else
@@ -379,18 +339,13 @@ private:
     /**
      * @brief A worker function to be assigned to each thread in the pool. Continuously pops tasks out of the queue and executes them, as long as the atomic variable running is set to true.
      */
-    void worker()
-    {
-        while (running)
-        {
+    void worker() {
+        while (running) {
             std::function<void()> task;
-            if (!paused && pop_task(task))
-            {
+            if (!paused && pop_task(task)) {
                 task();
                 tasks_total--;
-            }
-            else
-            {
+            } else {
                 sleep_or_yield();
             }
         }
@@ -440,8 +395,7 @@ private:
 /**
  * @brief A helper class to synchronize printing to an output stream by different threads.
  */
-class synced_stream
-{
+class synced_stream {
 public:
     /**
      * @brief Construct a new synced stream.
@@ -449,7 +403,7 @@ public:
      * @param _out_stream The output stream to print to. The default value is std::cout.
      */
     synced_stream(std::ostream &_out_stream = std::cout)
-            : out_stream(_out_stream){};
+            : out_stream(_out_stream) {};
 
     /**
      * @brief Print any number of items into the output stream. Ensures that no other threads print to this stream simultaneously, as long as they all exclusively use this synced_stream object to print.
@@ -457,9 +411,8 @@ public:
      * @tparam T The types of the items
      * @param items The items to print.
      */
-    template <typename... T>
-    void print(const T &...items)
-    {
+    template<typename... T>
+    void print(const T &...items) {
         const std::scoped_lock lock(stream_mutex);
         (out_stream << ... << items);
     }
@@ -470,9 +423,8 @@ public:
      * @tparam T The types of the items
      * @param items The items to print.
      */
-    template <typename... T>
-    void println(const T &...items)
-    {
+    template<typename... T>
+    void println(const T &...items) {
         print(items..., '\n');
     }
 
@@ -497,24 +449,21 @@ private:
 /**
  * @brief A helper class to measure execution time for benchmarking purposes.
  */
-class timer
-{
+class timer {
     typedef std::int_fast64_t i64;
 
 public:
     /**
      * @brief Start (or restart) measuring time.
      */
-    void start()
-    {
+    void start() {
         start_time = std::chrono::steady_clock::now();
     }
 
     /**
      * @brief Stop measuring time and store the elapsed time since start().
      */
-    void stop()
-    {
+    void stop() {
         elapsed_time = std::chrono::steady_clock::now() - start_time;
     }
 
@@ -523,8 +472,7 @@ public:
      *
      * @return The number of milliseconds.
      */
-    i64 ms() const
-    {
+    i64 ms() const {
         return (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time)).count();
     }
 

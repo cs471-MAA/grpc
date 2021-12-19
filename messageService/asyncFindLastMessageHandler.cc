@@ -7,7 +7,8 @@ using grpc::Status;
 
 
 findLastMessage_asyncClient::findLastMessage_asyncClient(
-        const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq, asyncFindLastMessageHandler *callData)
+        const std::shared_ptr<grpc::ChannelInterface> &channel, grpc::CompletionQueue *cq,
+        asyncFindLastMessageHandler *callData)
         : stub_(mmb::mockDatabase::NewStub(channel)), cq_(cq), callData_(callData) {}
 
 // Assembles the client's payload, sends it and presents the response back
@@ -48,11 +49,14 @@ void findLastMessage_asyncClient::Proceed(bool ok) {
 
 // ###############################################
 
-asyncFindLastMessageHandler::asyncFindLastMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                   std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient,
+asyncFindLastMessageHandler::asyncFindLastMessageHandler(messageService::AsyncService *service,
+                                                         ServerCompletionQueue *cq,
+                                                         std::shared_ptr<grpc::ChannelInterface> channel,
+                                                         grpc::CompletionQueue *cqClient,
                                                          std::shared_ptr<ServerStats2> serverStats)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)),
-          serverStats(std::move(serverStats)){
+        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
+          channel(std::move(channel)),
+          serverStats(std::move(serverStats)) {
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are

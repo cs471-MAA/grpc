@@ -9,7 +9,8 @@ using grpc::Status;
 
 
 mockDatabase_asyncClient::mockDatabase_asyncClient(
-        const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq, asyncSanitizeMessageHandler *callData)
+        const std::shared_ptr<grpc::ChannelInterface> &channel, grpc::CompletionQueue *cq,
+        asyncSanitizeMessageHandler *callData)
         : stub_(mmb::mockDatabase::NewStub(channel)), cq_(cq), callData_(callData) {}
 
 // Assembles the client's payload, sends it and presents the response back
@@ -51,13 +52,15 @@ void mockDatabase_asyncClient::Proceed(bool ok) {
 
 // ###############################################
 
-asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(sanitizationService::AsyncService *service, ServerCompletionQueue *cq,
-                                                         std::shared_ptr<grpc::ChannelInterface>  channel,
+asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(sanitizationService::AsyncService *service,
+                                                         ServerCompletionQueue *cq,
+                                                         std::shared_ptr<grpc::ChannelInterface> channel,
                                                          grpc::CompletionQueue *cqClient, thread_pool &threadPool,
                                                          std::chrono::microseconds waiting_time,
                                                          std::shared_ptr<ServerStats2> serverStats)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
-        channel(std::move(channel)), threadPool(threadPool), waiting_time(waiting_time), serverStats(std::move(serverStats)){
+          channel(std::move(channel)), threadPool(threadPool), waiting_time(waiting_time),
+          serverStats(std::move(serverStats)) {
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
@@ -72,7 +75,7 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
         // Push the request into a worker thread pool just like a real DB would do
-        threadPool.push_task([&] (){
+        threadPool.push_task([&]() {
 
             auto a = waiting_time.count();
             std::random_device dev;

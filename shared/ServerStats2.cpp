@@ -9,15 +9,15 @@
 #include <fstream>
 
 ServerStats2::ServerStats2(std::string filepath, bool erase_previous_file)
-: filepath(std::move(filepath)), stop(false), batch_write_interval(1000){
-    if (erase_previous_file){
+        : filepath(std::move(filepath)), stop(false), batch_write_interval(1000) {
+    if (erase_previous_file) {
         std::ofstream file;
         file.open(this->filepath, std::ofstream::trunc);
         file.close();
     }
 
-    thread1 = std::thread([&](){
-        while(!stop){
+    thread1 = std::thread([&]() {
+        while (!stop) {
             std::this_thread::sleep_for(batch_write_interval);
 
             dump_server_stats();
@@ -32,14 +32,15 @@ ServerStats2::~ServerStats2() {
 
 void ServerStats2::add_entry(uint64_t query_uid, uint64_t timestamp) {
 
-    if(mutex_.try_lock_shared()){ // If it can't lock just return without waiting. This skip a few datapoints but nothing terrible
+    if (mutex_.try_lock_shared()) { // If it can't lock just return without waiting. This skip a few datapoints but nothing terrible
 
         auto search = hashMap.find(std::this_thread::get_id());
-        if(search != hashMap.end()){
+        if (search != hashMap.end()) {
             search->second.emplace_back(std::make_tuple(query_uid, timestamp));
             mutex_.unlock_shared();
-        }else{
-            mutex_.unlock_shared(); mutex_.lock();
+        } else {
+            mutex_.unlock_shared();
+            mutex_.lock();
 
             std::vector<std::tuple<uint64_t, uint64_t>> newlog;
             newlog.emplace_back(std::make_tuple(query_uid, timestamp));
@@ -55,8 +56,8 @@ void ServerStats2::dump_server_stats(bool overwrite) {
 
     std::ofstream file;
     file.open(filepath, overwrite ? std::ofstream::trunc : std::ofstream::app);
-    for(auto& it: hashMap){
-        for(auto& elem: it.second){
+    for (auto &it: hashMap) {
+        for (auto &elem: it.second) {
             file << std::get<0>(elem) << "," << std::get<1>(elem) << std::endl;
         }
         it.second.clear();

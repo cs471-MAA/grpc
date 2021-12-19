@@ -4,6 +4,7 @@
 
 #include "mockDatabaseSync.h"
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
+
 using grpc::ServerBuilder;
 using grpc::Server;
 
@@ -16,8 +17,9 @@ mockDatabaseSyncImpl::~mockDatabaseSyncImpl() {
 
 }
 
-Status mockDatabaseSyncImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
-                                             ::mmb::findLastMessageReply *response) {
+Status
+mockDatabaseSyncImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
+                                      ::mmb::findLastMessageReply *response) {
     response->set_query_uid(request->query_uid());
     response->set_message("La la la la");
 
@@ -52,7 +54,7 @@ void RunSyncServer() {
     server->Wait();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     RunSyncServer();
 
     return 0;

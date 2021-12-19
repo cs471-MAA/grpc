@@ -11,6 +11,7 @@ using mmb::mockDatabase;
 class sanitizationServiceAsyncImpl final {
 public:
     sanitizationServiceAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::microseconds waiting_time);
+
     ~sanitizationServiceAsyncImpl();
 
     // There is no shutdown handling in this code.

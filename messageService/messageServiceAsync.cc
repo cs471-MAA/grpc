@@ -41,8 +41,10 @@ void messageServiceAsyncImpl::Run() {
 }
 
 void messageServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
-    std::shared_ptr<grpc::Channel> DBchannel = grpc::CreateChannel(M_MOCK_DATABASE_SOCKET_ADDRESS,grpc::InsecureChannelCredentials());
-    std::shared_ptr<grpc::Channel> Sanitchannel = grpc::CreateChannel(M_SANITIZATION_SERVICE_SOCKET_ADDRESS,grpc::InsecureChannelCredentials());
+    std::shared_ptr<grpc::Channel> DBchannel = grpc::CreateChannel(M_MOCK_DATABASE_SOCKET_ADDRESS,
+                                                                   grpc::InsecureChannelCredentials());
+    std::shared_ptr<grpc::Channel> Sanitchannel = grpc::CreateChannel(M_SANITIZATION_SERVICE_SOCKET_ADDRESS,
+                                                                      grpc::InsecureChannelCredentials());
 
     auto cqClient = new grpc::CompletionQueue();
     std::thread threadClient = std::thread(&messageServiceAsyncImpl::HandleChannel, cqClient);

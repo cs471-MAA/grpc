@@ -8,7 +8,8 @@ using grpc::Status;
 
 
 sanitizeMessage_asyncClient::sanitizeMessage_asyncClient(
-        const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq, asyncSendMessageHandler *callData)
+        const std::shared_ptr<grpc::ChannelInterface> &channel, grpc::CompletionQueue *cq,
+        asyncSendMessageHandler *callData)
         : stub_(mmb::sanitizationService::NewStub(channel)), cq_(cq), callData_(callData) {}
 
 // Assembles the client's payload, sends it and presents the response back
@@ -51,10 +52,12 @@ void sanitizeMessage_asyncClient::Proceed(bool ok) {
 // ###############################################
 
 asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                                                 std::shared_ptr<grpc::ChannelInterface>  channel,
-                                                 grpc::CompletionQueue *cqClient, std::shared_ptr<ServerStats2> serverStats)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)),
-        serverStats(std::move(serverStats)){
+                                                 std::shared_ptr<grpc::ChannelInterface> channel,
+                                                 grpc::CompletionQueue *cqClient,
+                                                 std::shared_ptr<ServerStats2> serverStats)
+        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
+          channel(std::move(channel)),
+          serverStats(std::move(serverStats)) {
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
@@ -62,7 +65,7 @@ asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *s
     // instances can serve different requests concurrently), in this case
     // the memory address of this CallData instance.
     service_->RequestsendMessage(&ctx_, &request_, &responder_, cq_, cq_,
-                                     this);
+                                 this);
 }
 
 void asyncSendMessageHandler::Proceed(bool ok) {

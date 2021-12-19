@@ -17,8 +17,8 @@ class asyncSanitizeMessageHandler;
 
 class mockDatabase_asyncClient : public asyncHandler {
 public:
-    explicit mockDatabase_asyncClient(const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq,
-                                         asyncSanitizeMessageHandler *callData);
+    explicit mockDatabase_asyncClient(const std::shared_ptr<grpc::ChannelInterface> &channel, grpc::CompletionQueue *cq,
+                                      asyncSanitizeMessageHandler *callData);
 
     // Assembles the client's payload, sends it and presents the response back
     // from the server.
@@ -57,12 +57,13 @@ private:
 class asyncSanitizeMessageHandler : public asyncHandler {
 public:
     friend class mockDatabase_asyncClient;
+
     /** Take in the "service" instance (in this case representing an asynchronous
     * server) and the completion queue "cq" used for asynchronous communication
     * with the gRPC runtime.
      */
     asyncSanitizeMessageHandler(sanitizationService::AsyncService *service, ServerCompletionQueue *cq,
-                                std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient,
+                                std::shared_ptr<grpc::ChannelInterface> channel, grpc::CompletionQueue *cqClient,
                                 thread_pool &threadPool, std::chrono::microseconds waiting_time,
                                 std::shared_ptr<ServerStats2> serverStats);
 
@@ -93,10 +94,12 @@ private:
     ServerAsyncResponseWriter<saveMessageReply> responder_;
 
     // Let's implement a tiny state machine with the following states.
-    enum CallStatus {PROCESS, FINISH};
+    enum CallStatus {
+        PROCESS, FINISH
+    };
     std::atomic<CallStatus> status_;  // The current serving state.
 
-    thread_pool& threadPool;
+    thread_pool &threadPool;
     std::chrono::microseconds waiting_time;
     std::shared_ptr<ServerStats2> serverStats;
 };

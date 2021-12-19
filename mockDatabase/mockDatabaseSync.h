@@ -9,7 +9,12 @@ using mmb::mockDatabase;
 class mockDatabaseSyncImpl final : public mockDatabase::Service {
 public:
     mockDatabaseSyncImpl();
+
     ~mockDatabaseSyncImpl() override;
-    Status findLastMessage(::grpc::ServerContext* context, const ::mmb::findLastMessageRequest* request, ::mmb::findLastMessageReply* response) override;
-    Status saveMessage(::grpc::ServerContext* context, const ::mmb::saveMessageRequest* request, ::mmb::saveMessageReply* response) override;
+
+    Status findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
+                           ::mmb::findLastMessageReply *response) override;
+
+    Status saveMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
+                       ::mmb::saveMessageReply *response) override;
 };

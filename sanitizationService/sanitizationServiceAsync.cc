@@ -3,8 +3,9 @@
 #include "asyncSanitizeMessageHandler.h"
 #include "../shared/consts.h"
 
-sanitizationServiceAsyncImpl::sanitizationServiceAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::microseconds waiting_time)
-: threadPool(workerThreads), waiting_time(waiting_time){
+sanitizationServiceAsyncImpl::sanitizationServiceAsyncImpl(std::uint_fast32_t workerThreads,
+                                                           std::chrono::microseconds waiting_time)
+        : threadPool(workerThreads), waiting_time(waiting_time) {
     serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "sanitServiceAsync.csv");
 }
 
@@ -36,7 +37,8 @@ void sanitizationServiceAsyncImpl::Run() {
 }
 
 void sanitizationServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
-    std::shared_ptr<grpc::Channel> DBchannel = grpc::CreateChannel(M_MOCK_DATABASE_SOCKET_ADDRESS,grpc::InsecureChannelCredentials());
+    std::shared_ptr<grpc::Channel> DBchannel = grpc::CreateChannel(M_MOCK_DATABASE_SOCKET_ADDRESS,
+                                                                   grpc::InsecureChannelCredentials());
 
     auto cqClient = new grpc::CompletionQueue();
     std::thread threadClient = std::thread(&sanitizationServiceAsyncImpl::HandleChannel, cqClient);

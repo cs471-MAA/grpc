@@ -16,7 +16,8 @@ class asyncFindLastMessageHandler;
 
 class findLastMessage_asyncClient : public asyncHandler {
 public:
-    explicit findLastMessage_asyncClient(const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq,
+    explicit findLastMessage_asyncClient(const std::shared_ptr<grpc::ChannelInterface> &channel,
+                                         grpc::CompletionQueue *cq,
                                          asyncFindLastMessageHandler *callData);
 
     // Assembles the client's payload, sends it and presents the response back
@@ -56,12 +57,13 @@ private:
 class asyncFindLastMessageHandler : public asyncHandler {
 public:
     friend class findLastMessage_asyncClient;
+
     /** Take in the "service" instance (in this case representing an asynchronous
     * server) and the completion queue "cq" used for asynchronous communication
     * with the gRPC runtime.
      */
     asyncFindLastMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                                std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient,
+                                std::shared_ptr<grpc::ChannelInterface> channel, grpc::CompletionQueue *cqClient,
                                 std::shared_ptr<ServerStats2> serverStats);
 
     void Proceed(bool ok) override;
@@ -89,7 +91,9 @@ private:
     ServerAsyncResponseWriter<findLastMessageReply> responder_;
 
     // Let's implement a tiny state machine with the following states.
-    enum CallStatus {PROCESS, FINISH};
+    enum CallStatus {
+        PROCESS, FINISH
+    };
     std::atomic<CallStatus> status_;  // The current serving state.
     std::shared_ptr<ServerStats2> serverStats;
 };

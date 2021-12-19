@@ -10,6 +10,7 @@ using mmb::mockDatabase;
 class messageServiceAsyncImpl final {
 public:
     messageServiceAsyncImpl();
+
     ~messageServiceAsyncImpl();
 
     // There is no shutdown handling in this code.
