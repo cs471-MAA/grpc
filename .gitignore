@@ -2,3 +2,4 @@ stats/*
 Session.vim
 .undodir
 .undodir/**
+build
