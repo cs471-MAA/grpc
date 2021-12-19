@@ -6,11 +6,11 @@ using grpc::Status;
 using mmb::mockDatabase;
 
 // Logic and data behind the server's behavior.
-class mockDatabaseSyncImpl final : public mockDatabase::Service {
+class mockDatabaseImpl final : public mockDatabase::Service {
 public:
-    mockDatabaseSyncImpl();
+    mockDatabaseImpl() = default;
 
-    ~mockDatabaseSyncImpl() override;
+    ~mockDatabaseImpl() override = default;
 
     Status findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
                            ::mmb::findLastMessageReply *response) override;
