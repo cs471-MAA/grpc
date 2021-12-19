@@ -90,6 +90,7 @@ int main(int argc, char **argv) {
 
     mt19937 generator;
     normal_distribution<float> normal_dist(meanWaitingTime, stdWaitingTime);
+    uniform_real_distribution<float> uni_dist(0.f, 1.f);
     if (argc > ++i)
         generator.seed(stoi(argv[i]));
     
@@ -98,19 +99,15 @@ int main(int argc, char **argv) {
     // are created. This channel models a connection to an endpoint (in this case,
     // localhost at port 50051). We indicate that the channel isn't authenticated
     // (use of InsecureChannelCredentials()).
-    std::shared_ptr<ServerStats2> serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "clientAsync.csv");
+    std::shared_ptr<ServerStats2> serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR CLIENT_ASYNC_FILENAME);
     clientAsync client(grpc::CreateChannel(M_MESSAGE_SERVICE_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()),
                        serverStats);
-
+    uint64_t client_uid = generate_local_uid();
 
     // Spawn reader thread that loops indefinitely
     // only calls findmessage atm
     std::thread thread_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
     std::thread thread2_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
-    
-    uniform_real_distribution<float> uni_dist(0.f, 1.f);
-
-    uint64_t client_uid = generate_local_uid();
     
     for (int i = 1; i < upperBound; i++) {
         uint64_t query_uid = get_query_uid(client_uid, i);
@@ -118,10 +115,10 @@ int main(int argc, char **argv) {
         
         float p = uni_dist(generator);
         if (p < findRequestProportion){
-            cout << "**FIND**" << i << "\n";
+            // cout << "**FIND**" << i << "\n";
             client.findLastMessage("admin", query_uid);  // The actual RPC call!
         } else{
-            cout << "->SEND<- " << i << "\n";
+            // cout << "->SEND<- " << i << "\n";
             client.sendMessage("admin", "world " + to_string(i), query_uid);  // The actual RPC call!
         }
         

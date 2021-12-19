@@ -1,7 +1,8 @@
 
+#include <grpcpp/grpcpp.h>
 #include "mock_message_board.grpc.pb.h"
 #include "../../shared/Utils.h"
-#include <grpcpp/grpcpp.h>
+#include "../../shared/ServerStats2.h"
 using grpc::Status;
 using mmb::mockDatabase;
 
@@ -21,4 +22,5 @@ public:
 private:                  
     uint32_t meanWaitingTime;
     uint32_t stdWaitingTime;
+    std::shared_ptr<ServerStats2> serverStats;
 };

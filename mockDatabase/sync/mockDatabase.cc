@@ -16,33 +16,36 @@ using namespace std;
 mockDatabaseImpl::mockDatabaseImpl(uint32_t meanWaitingTime,
                                   uint32_t stdWaitingTime):
     meanWaitingTime(meanWaitingTime), 
-    stdWaitingTime(stdWaitingTime) {}
+    stdWaitingTime(stdWaitingTime),
+    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MOCK_DATABASE_SYNC_FILENAME)) {}
 
 Status
 mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
                                       ::mmb::findLastMessageReply *response) {
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     response->set_query_uid(request->query_uid());
     response->set_message("La la la la");
     
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
-
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return Service::findLastMessage(context, request, response);
 }
 
 Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
                                          ::mmb::saveMessageReply *response) {
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     response->set_query_uid(request->query_uid());
     response->set_ok(true);
 
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
-
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return Service::saveMessage(context, request, response);
 }
 
 void RunServer(unsigned long workerThreads,
                    uint32_t meanWaitingTime,
                    uint32_t stdWaitingTime) {
-    std::string server_address(MOCK_DATABASE_SYNC_SOCKET_ADDRESS);
+    std::string server_address(M_MOCK_DATABASE_SYNC_SOCKET_ADDRESS);
     mockDatabaseImpl service(meanWaitingTime, stdWaitingTime);
 
     grpc::EnableDefaultHealthCheckService(true);
