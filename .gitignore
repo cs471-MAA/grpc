@@ -1,1 +1,4 @@
 stats/*
+Session.vim
+.undodir
+.undodir/**
