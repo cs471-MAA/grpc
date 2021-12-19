@@ -8,3 +8,12 @@ target_link_libraries(sanitizationServiceAsync
         ${_REFLECTION}
         ${_GRPC_GRPCPP}
         ${_PROTOBUF_LIBPROTOBUF})
+
+
+add_executable(sanitizationService shared/ServerStats2.h shared/ServerStats2.cpp shared/consts.h
+        sanitizationService/sync/sanitizationService.h sanitizationService/sync/sanitizationService.cc)
+target_link_libraries(sanitizationService
+        hw_grpc_proto
+        ${_REFLECTION}
+        ${_GRPC_GRPCPP}
+        ${_PROTOBUF_LIBPROTOBUF})
