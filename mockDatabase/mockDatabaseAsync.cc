@@ -11,7 +11,7 @@
 using grpc::ServerBuilder;
 
 
-ServerAsyncImpl::ServerAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::milliseconds waiting_time)
+ServerAsyncImpl::ServerAsyncImpl(std::uint_fast32_t workerThreads, std::chrono::microseconds waiting_time)
 :threadPool(workerThreads), waiting_time(waiting_time){}
 
 ServerAsyncImpl::~ServerAsyncImpl() {
@@ -61,7 +61,7 @@ void ServerAsyncImpl::HandleRpcs() {
 
 int main(int argc, char** argv) {
     unsigned long workerThreads = 10;
-    std::chrono::milliseconds waitingTime(100);
+    std::chrono::microseconds waitingTime(100);
 
     ServerAsyncImpl server(workerThreads, waitingTime);
     server.Run();

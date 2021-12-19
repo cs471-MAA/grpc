@@ -23,6 +23,16 @@ project(RPC_tests C CXX)
 
 include(common.cmake)
 
+option(LOCALHOST "Will create a code for localhost execution." OFF)
+if(LOCALHOST)
+    add_definitions(-DLOCALHOST)
+    message(STATUS
+            "The code will be compiled for localhost.")
+else()
+    message(STATUS
+            "The code will be compiled for docker.")
+endif()
+
 # Proto file
 get_filename_component(hw_proto "protos/mock_message_board.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)

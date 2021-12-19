@@ -1,8 +1,9 @@
 
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/asyncHandler.h"
+#include "../shared/thread_pool.h"
 
-using mmb::messageService;
+using mmb::sanitizationService;
 using mmb::saveMessageRequest;
 using mmb::saveMessageReply;
 using grpc::ServerCompletionQueue;
@@ -13,14 +14,14 @@ using grpc::Status;
 // Break circular dependency
 class asyncSanitizeMessageHandler;
 
-class sanitizeMessage_asyncClient : public asyncHandler {
+class mockDatabase_asyncClient : public asyncHandler {
 public:
-    explicit sanitizeMessage_asyncClient(const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq,
+    explicit mockDatabase_asyncClient(const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq,
                                          asyncSanitizeMessageHandler *callData);
 
     // Assembles the client's payload, sends it and presents the response back
     // from the server.
-    void sanitizeMessage(const std::string &cliend_id);
+    void saveMessage(const saveMessageRequest &request);
 
     // Will be called by the HandleChannel thread because of the cq_ variable this class use is the one that's looped on
     // in the HandleChannel function
@@ -32,7 +33,7 @@ private:
 
     // Out of the passed in Channel comes the stub, stored here, our view of the
     // server's exposed services.
-    std::unique_ptr<mmb::sanitizationService::Stub> stub_;
+    std::unique_ptr<mmb::mockDatabase::Stub> stub_;
     grpc::CompletionQueue *cq_{};
 
     // Container for the data we expect from the server.
@@ -40,7 +41,6 @@ private:
     // Storage for the status of the RPC upon completion.
     Status status;
     std::unique_ptr<grpc::ClientAsyncResponseReader<saveMessageReply>> rpc;
-    saveMessageRequest request;
 
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
@@ -50,17 +50,19 @@ private:
     asyncSanitizeMessageHandler *callData_;
 };
 
+// ###############################################
 
 // Class encompasing the state and logic needed to serve a request.
 class asyncSanitizeMessageHandler : public asyncHandler {
 public:
-    friend class sanitizeMessage_asyncClient;
+    friend class mockDatabase_asyncClient;
     /** Take in the "service" instance (in this case representing an asynchronous
     * server) and the completion queue "cq" used for asynchronous communication
     * with the gRPC runtime.
      */
-    asyncSanitizeMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                                std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient);
+    asyncSanitizeMessageHandler(sanitizationService::AsyncService *service, ServerCompletionQueue *cq,
+                                std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient,
+                                thread_pool &threadPool, std::chrono::microseconds waiting_time);
 
     void Proceed(bool ok) override;
 
@@ -74,7 +76,7 @@ private:
     const std::shared_ptr<grpc::ChannelInterface> channel;
     // The means of communication with the gRPC runtime for an asynchronous
     // server.
-    messageService::AsyncService *service_;
+    sanitizationService::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     ServerCompletionQueue *cq_;
     // Context for the rpc, allowing to tweak aspects of it such as the use
@@ -91,4 +93,7 @@ private:
     // Let's implement a tiny state machine with the following states.
     enum CallStatus {PROCESS, FINISH};
     std::atomic<CallStatus> status_;  // The current serving state.
+
+    thread_pool& threadPool;
+    std::chrono::microseconds waiting_time;
 };

@@ -20,7 +20,7 @@ public:
 
     // Assembles the client's payload, sends it and presents the response back
     // from the server.
-    void sanitizeMessage(const std::string &cliend_id);
+    void sanitizeMessage(const saveMessageRequest &request);
 
     // Will be called by the HandleChannel thread because of the cq_ variable this class use is the one that's looped on
     // in the HandleChannel function
@@ -40,7 +40,6 @@ private:
     // Storage for the status of the RPC upon completion.
     Status status;
     std::unique_ptr<grpc::ClientAsyncResponseReader<saveMessageReply>> rpc;
-    saveMessageRequest request;
 
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.

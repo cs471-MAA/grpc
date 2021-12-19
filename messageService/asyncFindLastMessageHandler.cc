@@ -11,11 +11,8 @@ findLastMessage_asyncClient::findLastMessage_asyncClient(
 
 // Assembles the client's payload, sends it and presents the response back
 // from the server.
-void findLastMessage_asyncClient::findLastMessage(const std::string &cliend_id) {
+void findLastMessage_asyncClient::findLastMessage(findLastMessageRequest &request) {
     reply = findLastMessageReply();
-
-    // Data we are sending to the server.
-    request.set_client_id(cliend_id);
 
     // You can declare error and stuff
     status = Status();
@@ -66,15 +63,9 @@ asyncFindLastMessageHandler::asyncFindLastMessageHandler(messageService::AsyncSe
 
 void asyncFindLastMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
-        std::stringstream ss;
-        ss << std::this_thread::get_id();
-
-        // The actual processing.
-        std::string prefix("Hello from server1 threadID " + ss.str());
-        //std::string bidule = greeter.SayHello("server1");
 
         auto asyncClient = new findLastMessage_asyncClient(channel, cqClient, this);
-        asyncClient->findLastMessage(prefix + "async call " + request_.client_id());
+        asyncClient->findLastMessage(request_);
 
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as

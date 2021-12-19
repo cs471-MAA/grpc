@@ -11,6 +11,9 @@
 #include <grpcpp/grpcpp.h>
 
 #include "mock_message_board.grpc.pb.h"
+#include <cinttypes>
+#include "../shared/asyncHandler.h"
+
 
 using grpc::Channel;
 using grpc::ClientAsyncResponseReader;
@@ -27,7 +30,8 @@ class AsyncClient {
 public:
     explicit AsyncClient(const std::shared_ptr<Channel> &channel);
 
-    void findLastMessage(const std::string& cliend_id);
+    void findLastMessage(const std::string& cliend_id, uint64_t query_uid = 0);
+    void sendMessage(const std::string& cliend_id, const std::string& message, uint64_t query_uid = 0);
 
     /** Loop while listening for completed responses.
      ** Prints out the response from the server.
@@ -35,8 +39,8 @@ public:
     void AsyncCompleteRpc();
 
 private:
-    // struct for keeping state and data information
-    struct AsC_findLastMessageCall {
+    class AsC_findLastMessageCall : public asyncHandler {
+    public:
         // Container for the data we expect from the server.
         findLastMessageReply reply;
 
@@ -48,10 +52,15 @@ private:
         Status status;
 
         std::unique_ptr<ClientAsyncResponseReader<findLastMessageReply>> response_reader;
+
+        void Proceed(bool ok) override{
+            std::cout << reply.message() << std::endl;
+        }
     };
 
     // struct for keeping state and data information
-    struct AsC_saveMessageCall {
+    class AsC_saveMessageCall : public asyncHandler {
+    public:
         // Container for the data we expect from the server.
         saveMessageReply reply;
 
@@ -63,6 +72,10 @@ private:
         Status status;
 
         std::unique_ptr<ClientAsyncResponseReader<saveMessageReply>> response_reader;
+
+        void Proceed(bool ok) override{
+            std::cout << reply.ok() << std::endl;
+        }
     };
 
     // Out of the passed in Channel comes the stub, stored here, our view of the

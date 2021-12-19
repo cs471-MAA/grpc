@@ -1,7 +1,8 @@
 
 
 
-add_executable(mockDatabaseAsync shared/consts.h shared/thread_pool.h shared/HashNode.h shared/HashMap.h shared/asyncHandler.h mockDatabase/asyncFindLastMessageHandler.h
+add_executable(mockDatabaseAsync shared/consts.h shared/thread_pool.h shared/HashNode.h shared/HashMap.h shared/asyncHandler.h
+        mockDatabase/asyncFindLastMessageHandler.h
         mockDatabase/asyncSaveMessageHandler.h mockDatabase/mockDatabaseAsync.h mockDatabase/mockDatabaseAsync.cc)
 target_link_libraries(mockDatabaseAsync
         hw_grpc_proto

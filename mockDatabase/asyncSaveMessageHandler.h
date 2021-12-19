@@ -22,7 +22,7 @@ public:
     // server) and the completion queue "cq" used for asynchronous communication
     // with the gRPC runtime.
     asyncSaveMessageHandler(mockDatabase::AsyncService* service, ServerCompletionQueue* cq, thread_pool &threadPool,
-                            std::chrono::milliseconds waiting_time, CTSL::HashMap<std::string, std::string> &hashMap)
+                            std::chrono::microseconds waiting_time, CTSL::HashMap<std::string, std::string> &hashMap)
             : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), threadPool(threadPool),
               waiting_time(waiting_time), hashMap(hashMap){
 
@@ -84,6 +84,6 @@ private:
     std::atomic<CallStatus> status_; // The current serving state.
 
     thread_pool& threadPool;
-    std::chrono::milliseconds waiting_time;
+    std::chrono::microseconds waiting_time;
     CTSL::HashMap<std::string, std::string> &hashMap;
 };

@@ -11,11 +11,8 @@ sanitizeMessage_asyncClient::sanitizeMessage_asyncClient(
 
 // Assembles the client's payload, sends it and presents the response back
 // from the server.
-void sanitizeMessage_asyncClient::sanitizeMessage(const std::string &cliend_id) {
+void sanitizeMessage_asyncClient::sanitizeMessage(const saveMessageRequest &request) {
     reply = saveMessageReply();
-
-    // Data we are sending to the server.
-    request.set_client_id(cliend_id);
 
     // You can declare error and stuff
     status = Status();
@@ -66,15 +63,11 @@ asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *s
 
 void asyncSendMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
-        std::stringstream ss;
-        ss << std::this_thread::get_id();
 
         // The actual processing.
-        std::string prefix("Hello from server1 threadID " + ss.str());
-        //std::string bidule = greeter.SayHello("server1");
 
         auto asyncClient = new sanitizeMessage_asyncClient(channel, cqClient, this);
-        asyncClient->sanitizeMessage(prefix + "async call " + request_.client_id());
+        asyncClient->sanitizeMessage(request_);
 
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as

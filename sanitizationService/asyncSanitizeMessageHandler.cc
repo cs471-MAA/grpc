@@ -5,17 +5,14 @@
 using grpc::Status;
 
 
-sanitizeMessage_asyncClient::sanitizeMessage_asyncClient(
+mockDatabase_asyncClient::mockDatabase_asyncClient(
         const std::shared_ptr<grpc::ChannelInterface>& channel, grpc::CompletionQueue *cq, asyncSanitizeMessageHandler *callData)
-        : stub_(mmb::sanitizationService::NewStub(channel)), cq_(cq), callData_(callData) {}
+        : stub_(mmb::mockDatabase::NewStub(channel)), cq_(cq), callData_(callData) {}
 
 // Assembles the client's payload, sends it and presents the response back
 // from the server.
-void sanitizeMessage_asyncClient::sanitizeMessage(const std::string &cliend_id) {
+void mockDatabase_asyncClient::saveMessage(const saveMessageRequest &request) {
     reply = saveMessageReply();
-
-    // Data we are sending to the server.
-    request.set_client_id(cliend_id);
 
     // You can declare error and stuff
     status = Status();
@@ -25,7 +22,7 @@ void sanitizeMessage_asyncClient::sanitizeMessage(const std::string &cliend_id) 
     // an instance to store in "call" but does not actually start the RPC
     // Because we are using the asynchronous API, we need to hold on to
     // the "call" instance in order to get updates on the ongoing RPC.
-    rpc = (stub_->PrepareAsyncsanitize_message(&context, request, cq_));
+    rpc = (stub_->PrepareAsyncsaveMessage(&context, request, cq_));
 
     // StartCall initiates the RPC call
     rpc->StartCall();
@@ -36,7 +33,7 @@ void sanitizeMessage_asyncClient::sanitizeMessage(const std::string &cliend_id) 
     rpc->Finish(&reply, &status, this);
 }
 
-void sanitizeMessage_asyncClient::Proceed(bool ok) {
+void mockDatabase_asyncClient::Proceed(bool ok) {
     // Act upon the status of the actual RPC.
     if (status.ok()) {
         //std::cout << bidule << std::endl;
@@ -51,35 +48,40 @@ void sanitizeMessage_asyncClient::Proceed(bool ok) {
 
 // ###############################################
 
-asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
-                                                         std::shared_ptr<grpc::ChannelInterface>  channel, grpc::CompletionQueue *cqClient)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient), channel(std::move(channel)) {
+asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(sanitizationService::AsyncService *service, ServerCompletionQueue *cq,
+                                                         std::shared_ptr<grpc::ChannelInterface>  channel,
+                                                         grpc::CompletionQueue *cqClient, thread_pool &threadPool,
+                                                         std::chrono::microseconds waiting_time)
+        : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
+        channel(std::move(channel)), threadPool(threadPool), waiting_time(waiting_time) {
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
     // the tag uniquely identifying the request (so that different CallData
     // instances can serve different requests concurrently), in this case
     // the memory address of this CallData instance.
-    service_->RequestsendMessage(&ctx_, &request_, &responder_, cq_, cq_,
+    service_->Requestsanitize_message(&ctx_, &request_, &responder_, cq_, cq_,
                                      this);
 }
 
 void asyncSanitizeMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
-        std::stringstream ss;
-        ss << std::this_thread::get_id();
 
-        // The actual processing.
-        std::string prefix("Hello from server1 threadID " + ss.str());
-        //std::string bidule = greeter.SayHello("server1");
+        // Push the request into a worker thread pool just like a real DB would do
+        threadPool.push_task([&] (){
 
-        auto asyncClient = new sanitizeMessage_asyncClient(channel, cqClient, this);
-        asyncClient->sanitizeMessage(prefix + "async call " + request_.client_id());
+            std::this_thread::sleep_for(waiting_time);
+            status_ = FINISH;
+            auto asyncClient = new mockDatabase_asyncClient(channel, cqClient, this);
+            asyncClient->saveMessage(request_);
+        });
+
+
 
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new asyncSanitizeMessageHandler(service_, cq_, channel, cqClient);
+        new asyncSanitizeMessageHandler(service_, cq_, channel, cqClient, threadPool, waiting_time);
     } else {
         GPR_ASSERT(status_ == FINISH);
         // Once in the FINISH state, deallocate ourselves (CallData).
