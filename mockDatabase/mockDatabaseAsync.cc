@@ -6,6 +6,8 @@
 #include "../shared/asyncHandler.h"
 #include "asyncSaveMessageHandler.h"
 #include "asyncFindLastMessageHandler.h"
+#include "../shared/consts.h"
+
 using grpc::ServerBuilder;
 
 
@@ -19,7 +21,7 @@ ServerAsyncImpl::~ServerAsyncImpl() {
 }
 
 void ServerAsyncImpl::Run() {
-    std::string server_address("0.0.0.0:50051");
+    std::string server_address(M_MOCK_DATABASE_SOCKET_ADDRESS);
 
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.

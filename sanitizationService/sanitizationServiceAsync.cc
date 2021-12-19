@@ -1,18 +1,17 @@
 #include <thread>
-#include "messageServiceAsync.h"
-#include "asyncFindLastMessageHandler.h"
-#include "asyncSendMessageHandler.h"
+#include "sanitizationServiceAsync.h"
+#include "asyncSanitizeMessageHandler.h"
 #include "../shared/consts.h"
 
-messageServiceAsyncImpl::~messageServiceAsyncImpl() {
+sanitizationServiceAsyncImpl::~sanitizationServiceAsyncImpl() {
     server_->Shutdown();
     // Always shutdown the completion queue after the server.
     cq_->Shutdown();
     cq2_->Shutdown();
 }
 
-void messageServiceAsyncImpl::Run() {
-    std::string server_address(M_MESSAGE_SERVICE_SOCKET_ADDRESS);
+void sanitizationServiceAsyncImpl::Run() {
+    std::string server_address = M_SANITIZATION_SERVICE_SOCKET_ADDRESS;
 
     grpc::ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
@@ -29,22 +28,21 @@ void messageServiceAsyncImpl::Run() {
     std::cout << "Server listening on " << server_address << std::endl;
 
     // Proceed to the server's main loop.
-    std::thread thread1 = std::thread(&messageServiceAsyncImpl::HandleRpcs, this, cq_.get());
-    std::thread thread2 = std::thread(&messageServiceAsyncImpl::HandleRpcs, this, cq2_.get());
+    std::thread thread1 = std::thread(&sanitizationServiceAsyncImpl::HandleRpcs, this, cq_.get());
+    std::thread thread2 = std::thread(&sanitizationServiceAsyncImpl::HandleRpcs, this, cq2_.get());
     thread1.join();  // blocks forever
     thread2.join();  // blocks forever
 }
 
-void messageServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
-    std::shared_ptr<grpc::Channel> DBchannel = grpc::CreateChannel(M_MOCK_DATABASE_SOCKET_ADDRESS,grpc::InsecureChannelCredentials());
-    std::shared_ptr<grpc::Channel> Sanitchannel = grpc::CreateChannel(M_SANITIZATION_SERVICE_SOCKET_ADDRESS,grpc::InsecureChannelCredentials());
+void sanitizationServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
+    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel("localhost:50051",
+                                                                 grpc::InsecureChannelCredentials());
 
     auto cqClient = new grpc::CompletionQueue();
-    std::thread threadClient = std::thread(&messageServiceAsyncImpl::HandleChannel, cqClient);
+    std::thread threadClient = std::thread(&sanitizationServiceAsyncImpl::HandleChannel, cqClient);
 
     // Spawn a new CallData instance to serve new clients.
-    new asyncFindLastMessageHandler(&service_, cq, DBchannel, cqClient);
-    new asyncSendMessageHandler(&service_, cq, Sanitchannel, cqClient);
+    new asyncSanitizeMessageHandler(&service_, cq, channel, cqClient);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -59,7 +57,7 @@ void messageServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
     }
 }
 
-void messageServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
+void sanitizationServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -76,7 +74,7 @@ void messageServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
 
 
 int main(int argc, char **argv) {
-    messageServiceAsyncImpl server;
+    sanitizationServiceAsyncImpl server;
     server.Run();
 
     return 0;

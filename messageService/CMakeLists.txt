@@ -1,5 +1,5 @@
 
-add_executable(messageServiceAsync messageService/asyncFindLastMessageHandler.h messageService/asyncSendMessageHandler.h
+add_executable(messageServiceAsync shared/consts.h messageService/asyncFindLastMessageHandler.h messageService/asyncSendMessageHandler.h
         messageService/messageServiceAsync.h messageService/asyncFindLastMessageHandler.cc
         messageService/asyncSendMessageHandler.cc messageService/messageServiceAsync.cc)
 target_link_libraries(messageServiceAsync
