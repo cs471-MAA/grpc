@@ -6,6 +6,7 @@
 
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
+#include <random>
 
 #include "mock_message_board.grpc.pb.h"
 #include "clientAsync.h"
@@ -94,11 +95,18 @@ int main(int argc, char **argv) {
     std::thread thread_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
     std::thread thread2_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
 
-    int upper_bound = 10000;
+    int sending_rate = 4000;
+    std::random_device dev;
+    std::mt19937 generator(dev());
+    std::normal_distribution<float> normal_dist(sending_rate, sending_rate / 2);
+
+    int upper_bound = 1000;
     for (int i = 1; i < upper_bound; i++) {
         std::string user("world " + std::to_string(i));
         serverStats->add_entry(i, get_epoch_time_us());
         client.findLastMessage("world " + std::to_string(i - 40), i);  // The actual RPC call!
+
+        std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
 
         int second_request = upper_bound + i;
         serverStats->add_entry(second_request, get_epoch_time_us());

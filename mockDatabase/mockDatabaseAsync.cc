@@ -63,7 +63,7 @@ void ServerAsyncImpl::HandleRpcs() {
 
 int main(int argc, char **argv) {
     unsigned long workerThreads = 10;
-    std::chrono::microseconds waitingTime(1000);
+    std::chrono::microseconds waitingTime(3000);
 
     ServerAsyncImpl server(workerThreads, waitingTime);
     server.Run();

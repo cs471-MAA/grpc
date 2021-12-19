@@ -77,7 +77,7 @@ void sanitizationServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
 
 int main(int argc, char **argv) {
     unsigned long workerThreads = 10;
-    std::chrono::microseconds waitingTime(500);
+    std::chrono::microseconds waitingTime(1000);
 
     sanitizationServiceAsyncImpl server(workerThreads, waitingTime);
     server.Run();

@@ -67,6 +67,8 @@ private:
                 std::cout << "findMessage Error: " << status.error_details() << std::endl;
             }
             serverStats->add_entry(reply.query_uid(), get_epoch_time_us());
+
+            delete this;
         }
 
     private:
@@ -95,6 +97,8 @@ private:
                 std::cout << "saveMessage Error: " << status.error_details() << std::endl;
             }
             serverStats->add_entry(reply.query_uid(), get_epoch_time_us());
+
+            delete this;
         }
 
     private:
