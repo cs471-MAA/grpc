@@ -1,6 +1,6 @@
 
 #include "mock_message_board.grpc.pb.h"
-
+#include "../../shared/Utils.h"
 
 // Logic and data behind the server's behavior.
 class sanitizationServiceImpl final : public mmb::sanitizationService::Service {

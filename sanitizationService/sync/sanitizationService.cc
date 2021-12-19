@@ -3,7 +3,7 @@
 //
 
 #include "sanitizationService.h"
-#include "../shared/consts.h"
+#include "../../shared/consts.h"
 
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
