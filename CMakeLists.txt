@@ -61,7 +61,9 @@ add_library(hw_grpc_proto
   ${hw_grpc_hdrs}
   ${hw_proto_srcs}
   ${hw_proto_hdrs})
-target_link_libraries(hw_grpc_proto
+target_link_libraries(hw_grpc_proto \
+&& make install
+RUN rm -r /app
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
@@ -71,7 +73,7 @@ include(client/CMakeLists.txt)
 include(messageService/CMakeLists.txt)
 include(mockDatabase/CMakeLists.txt)
 include(sanitizationService/CMakeLists.txt)
-include(old/CMakeLists.txt)
+#include(old/CMakeLists.txt)
 
 
 
