@@ -9,10 +9,10 @@
 #include <fstream>
 
 ServerStats2::ServerStats2(std::string filepath, bool erase_previous_file)
-: filepath(std::move(filepath)), stop(false), batch_write_interval(100){
+: filepath(std::move(filepath)), stop(false), batch_write_interval(1000){
     if (erase_previous_file){
         std::ofstream file;
-        file.open(filepath, std::ofstream::trunc);
+        file.open(this->filepath, std::ofstream::trunc);
         file.close();
     }
 

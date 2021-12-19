@@ -12,7 +12,10 @@
 
 #include "mock_message_board.grpc.pb.h"
 #include <cinttypes>
+#include <utility>
 #include "../shared/asyncHandler.h"
+#include "../shared/ServerStats2.h"
+#include "../shared/Utils.h"
 
 
 using grpc::Channel;
@@ -26,9 +29,9 @@ using mmb::findLastMessageReply;
 using mmb::saveMessageRequest;
 using mmb::saveMessageReply;
 
-class AsyncClient {
+class clientAsync {
 public:
-    explicit AsyncClient(const std::shared_ptr<Channel> &channel);
+    explicit clientAsync(const std::shared_ptr<Channel> &channel, std::shared_ptr<ServerStats2> serverStats);
 
     void findLastMessage(const std::string& cliend_id, uint64_t query_uid = 0);
     void sendMessage(const std::string& cliend_id, const std::string& message, uint64_t query_uid = 0);
@@ -41,6 +44,7 @@ public:
 private:
     class AsC_findLastMessageCall : public asyncHandler {
     public:
+        explicit AsC_findLastMessageCall(std::shared_ptr<ServerStats2> serverStats): serverStats(std::move(serverStats)){}
         // Container for the data we expect from the server.
         findLastMessageReply reply;
 
@@ -59,12 +63,17 @@ private:
             }else{
                 std::cout << "findMessage Error: " << status.error_details() << std::endl;
             }
+            serverStats->add_entry(reply.query_uid(), get_epoch_time_us());
         }
+
+    private:
+        std::shared_ptr<ServerStats2> serverStats;
     };
 
     // struct for keeping state and data information
     class AsC_saveMessageCall : public asyncHandler {
     public:
+        explicit AsC_saveMessageCall(std::shared_ptr<ServerStats2> serverStats): serverStats(std::move(serverStats)){}
         // Container for the data we expect from the server.
         saveMessageReply reply;
 
@@ -81,7 +90,10 @@ private:
             if(!ok){
                 std::cout << "saveMessage Error: " << status.error_details() << std::endl;
             }
+            serverStats->add_entry(reply.query_uid(), get_epoch_time_us());
         }
+    private:
+        std::shared_ptr<ServerStats2> serverStats;
     };
 
     // Out of the passed in Channel comes the stub, stored here, our view of the
@@ -91,4 +103,6 @@ private:
     // The producer-consumer queue we use to communicate asynchronously with the
     // gRPC runtime.
     CompletionQueue cq_;
+
+    std::shared_ptr<ServerStats2> serverStats;
 };

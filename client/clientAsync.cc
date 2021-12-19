@@ -2,25 +2,28 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 
 #include <grpc/support/log.h>
 #include <grpcpp/grpcpp.h>
 
 #include "mock_message_board.grpc.pb.h"
-#include "asyncClient.h"
+#include "clientAsync.h"
 #include "../shared/consts.h"
+#include "../shared/ServerStats2.h"
+#include "../shared/Utils.h"
 
-AsyncClient::AsyncClient(const std::shared_ptr<Channel> &channel)
-        : stub_(messageService::NewStub(channel)){}
+clientAsync::clientAsync(const std::shared_ptr<Channel> &channel, std::shared_ptr<ServerStats2> serverStats)
+        : stub_(messageService::NewStub(channel)), serverStats(std::move(serverStats)){}
 
-void AsyncClient::findLastMessage(const std::string &cliend_id, uint64_t query_uid) {
+void clientAsync::findLastMessage(const std::string &cliend_id, uint64_t query_uid) {
     // Data we are sending to the server.
     findLastMessageRequest request;
     request.set_client_id(cliend_id);
     request.set_query_uid(query_uid);
 
     // Call object to store rpc data
-    auto* call = new AsC_findLastMessageCall();
+    auto* call = new AsC_findLastMessageCall(serverStats);
 
     // stub_->PrepareAsyncSayHello() creates an RPC object, returning
     // an instance to store in "call" but does not actually start the RPC
@@ -38,7 +41,7 @@ void AsyncClient::findLastMessage(const std::string &cliend_id, uint64_t query_u
     call->response_reader->Finish(&call->reply, &call->status, (void*)call);
 }
 
-void AsyncClient::sendMessage(const std::string &cliend_id, const std::string &message, uint64_t query_uid) {
+void clientAsync::sendMessage(const std::string &cliend_id, const std::string &message, uint64_t query_uid) {
     // Data we are sending to the server.
     saveMessageRequest request;
     request.set_client_id(cliend_id);
@@ -46,7 +49,7 @@ void AsyncClient::sendMessage(const std::string &cliend_id, const std::string &m
     request.set_query_uid(query_uid);
 
     // Call object to store rpc data
-    auto* call = new AsC_saveMessageCall;
+    auto* call = new AsC_saveMessageCall(serverStats);
 
     // stub_->PrepareAsyncSayHello() creates an RPC object, returning
     // an instance to store in "call" but does not actually start the RPC
@@ -64,7 +67,7 @@ void AsyncClient::sendMessage(const std::string &cliend_id, const std::string &m
     call->response_reader->Finish(&call->reply, &call->status, (void*)call);
 }
 
-void AsyncClient::AsyncCompleteRpc() {
+void clientAsync::AsyncCompleteRpc() {
     void* tag;
     bool ok = false;
 
@@ -81,19 +84,25 @@ int main(int argc, char** argv) {
   // are created. This channel models a connection to an endpoint (in this case,
   // localhost at port 50051). We indicate that the channel isn't authenticated
   // (use of InsecureChannelCredentials()).
-  AsyncClient client(grpc::CreateChannel(
-          M_MESSAGE_SERVICE_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
+
+  std::shared_ptr<ServerStats2> serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR "clientAsync.csv");
+  clientAsync client(grpc::CreateChannel(M_MESSAGE_SERVICE_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()), serverStats);
+
 
   // Spawn reader thread that loops indefinitely
   // only calls findmessage atm
-  std::thread thread_ = std::thread(&AsyncClient::AsyncCompleteRpc, &client);
-  std::thread thread2_ = std::thread(&AsyncClient::AsyncCompleteRpc, &client);
+  std::thread thread_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
+  std::thread thread2_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
 
   int upper_bound = 10000;
   for (int i = 0; i < upper_bound; i++) {
     std::string user("world " + std::to_string(i));
-      client.findLastMessage("world " + std::to_string(i-40), i);  // The actual RPC call!
-      client.sendMessage("world " + std::to_string(i), "world " + std::to_string(i), upper_bound + i);  // The actual RPC call!
+    serverStats->add_entry(i, get_epoch_time_us());
+    client.findLastMessage("world " + std::to_string(i-40), i);  // The actual RPC call!
+
+      int second_request = upper_bound + i;
+      serverStats->add_entry(second_request, get_epoch_time_us());
+      client.sendMessage("world " + std::to_string(i), "world " + std::to_string(i), second_request);  // The actual RPC call!
   }
 
   std::cout << "Press control-c to quit" << std::endl << std::endl;
