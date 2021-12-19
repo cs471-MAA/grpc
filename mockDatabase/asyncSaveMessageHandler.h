@@ -35,8 +35,7 @@ public:
         // the tag uniquely identifying the request (so that different CallData
         // instances can serve different requests concurrently), in this case
         // the memory address of this CallData instance.
-        service_->RequestsaveMessage(&ctx_, &request_, &responder_, cq_,
-                                         cq_,this);
+        service_->RequestsaveMessage(&ctx_, &request_, &responder_, cq_, cq_,this);
     }
 
     void Proceed(bool ok) override {
@@ -44,7 +43,7 @@ public:
             serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
             // The actual processing.
-
+            reply_.set_query_uid(request_.query_uid());
             // Push the request into a worker thread pool just like a real DB would do
             threadPool.push_task([&] (){
                 hashMap.insert(request_.client_id(), request_.message());
