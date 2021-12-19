@@ -9,8 +9,7 @@ using mmb::mockDatabase;
 // Logic and data behind the server's behavior.
 class mockDatabaseImpl final : public mockDatabase::Service {
 public:
-    mockDatabaseImpl(uint32_t meanWaitingTime, 
-                     uint32_t stdWaitingTime);
+    mockDatabaseImpl(uint32_t meanWaitingTime, uint32_t stdWaitingTime);
 
     ~mockDatabaseImpl() override = default;
 

@@ -37,7 +37,11 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     // the server and/or tweak certain RPC behaviors.
     grpc::ClientContext clientContext;
 
-    auto result = mockDatabaseStub_->findLastMessage(&clientContext, *request, response);
+    findLastMessageReply response2;
+    auto result = mockDatabaseStub_->findLastMessage(&clientContext, *request, &response2);
+
+    response->set_message(response2.message());
+    response->set_query_uid(response2.query_uid());
 
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
 
@@ -53,7 +57,11 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
     grpc::ClientContext clientContext;
-    auto result = sanitizationServiceStub_->sanitize_message(&clientContext, *request, response);
+
+    saveMessageReply response2;
+    auto result = sanitizationServiceStub_->sanitize_message(&clientContext, *request, &response2);
+    response->set_ok(response2.ok());
+    response->set_query_uid(response2.query_uid());
 
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());

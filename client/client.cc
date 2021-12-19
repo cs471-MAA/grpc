@@ -14,7 +14,8 @@ int main(int argc, char** argv) {
     uint32_t upperBound = ((argc > ++i) ? stoi(argv[i]) : 256);
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 500);
-    float findRequestProportion = ((argc > ++i) ? stof(argv[i]) : 0.5);
+    float findRequestProportion = ((argc > ++i) ? stof(argv[i]) : (float)0.5);
+
 
     mt19937 generator;
     normal_distribution<float> normal_dist(meanWaitingTime, stdWaitingTime);
@@ -34,7 +35,7 @@ int main(int argc, char** argv) {
         float p = uni_dist(generator);
         if (p < findRequestProportion){
             // cout << "**FIND**" << i << "\n";
-            client.findLastMessage("admin", query_uid);  // The actual RPC call!
+            cout << client.findLastMessage("admin", query_uid) << endl;  // The actual RPC call!
         } else{
             // cout << "->SEND<- " << i << "\n";
             client.sendMessage("admin", "world " + to_string(i), query_uid);  // The actual RPC call!
