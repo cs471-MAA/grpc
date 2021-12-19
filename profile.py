@@ -14,10 +14,10 @@ def create_node(node_name, ports, entrypoint):
     node = request.DockerContainer(node_name)
 
     # Indicate the image is external
-    # node.docker_extimage = "saheru/grpc-benchmark:latest"
+    node.docker_extimage = "saheru/grpc-benchmark:latest"
 
     # Indicate the dockerfile for the benchmark
-    node.docker_dockerfile = "/local/repository/benchmark.dockerfile"
+    # node.docker_dockerfile = "/local/repository/benchmark.dockerfile"
 
     # entrypoint
     node.docker_entrypoint = entrypoint
