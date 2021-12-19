@@ -54,8 +54,13 @@ public:
                     reply_.set_message( "Client ID not found");
                 }
 
+                auto a = waiting_time.count();
+                std::random_device dev;
+                std::mt19937 generator(dev());
+                std::normal_distribution<float> normal_dist(a, a / 2);
+                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
+
                 status_ = FINISH;
-                std::this_thread::sleep_for(waiting_time);
                 responder_.Finish(reply_, Status::OK, this);
             });
 

@@ -1,6 +1,7 @@
 #include <thread>
 #include <sstream>
 #include <utility>
+#include <random>
 #include "asyncSanitizeMessageHandler.h"
 #include "../shared/Utils.h"
 
@@ -63,8 +64,7 @@ asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(sanitizationService::As
     // the tag uniquely identifying the request (so that different CallData
     // instances can serve different requests concurrently), in this case
     // the memory address of this CallData instance.
-    service_->Requestsanitize_message(&ctx_, &request_, &responder_, cq_, cq_,
-                                     this);
+    service_->Requestsanitize_message(&ctx_, &request_, &responder_, cq_, cq_, this);
 }
 
 void asyncSanitizeMessageHandler::Proceed(bool ok) {
@@ -74,7 +74,12 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
         // Push the request into a worker thread pool just like a real DB would do
         threadPool.push_task([&] (){
 
-            std::this_thread::sleep_for(waiting_time);
+            auto a = waiting_time.count();
+            std::random_device dev;
+            std::mt19937 generator(dev());
+            std::normal_distribution<float> normal_dist(a, a / 2);
+            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
+
             status_ = FINISH;
             auto asyncClient = new mockDatabase_asyncClient(channel, cqClient, this);
             asyncClient->saveMessage(request_);

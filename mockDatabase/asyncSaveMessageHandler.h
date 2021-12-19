@@ -2,6 +2,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <utility>
+#include <random>
 
 #include "mock_message_board.grpc.pb.h"
 #include "../shared/thread_pool.h"
@@ -48,7 +49,12 @@ public:
             threadPool.push_task([&] (){
                 hashMap.insert(request_.client_id(), request_.message());
 
-                std::this_thread::sleep_for(waiting_time);
+                auto a = waiting_time.count();
+                std::random_device dev;
+                std::mt19937 generator(dev());
+                std::normal_distribution<float> normal_dist(a, a / 2);
+                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
+
                 status_ = FINISH;
                 responder_.Finish(reply_, Status::OK, this);
             });

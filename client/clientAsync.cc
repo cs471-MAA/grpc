@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
   std::thread thread2_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
 
   int upper_bound = 10000;
-  for (int i = 0; i < upper_bound; i++) {
+  for (int i = 1; i < upper_bound; i++) {
     std::string user("world " + std::to_string(i));
     serverStats->add_entry(i, get_epoch_time_us());
     client.findLastMessage("world " + std::to_string(i-40), i);  // The actual RPC call!
