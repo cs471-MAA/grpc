@@ -11,8 +11,8 @@ target_link_libraries(mockDatabaseAsync
         ${_GRPC_GRPCPP}
         ${_PROTOBUF_LIBPROTOBUF})
 
-add_executable(mockDatabaseSync shared/HashNode.h shared/HashMap.h mockDatabase/mockDatabaseSync.h mockDatabase/mockDatabaseSync.cc)
-target_link_libraries(mockDatabaseSync
+add_executable(mockDatabase shared/HashNode.h shared/HashMap.h mockDatabase/sync/mockDatabase.h mockDatabase/sync/mockDatabase.cc)
+target_link_libraries(mockDatabase
         hw_grpc_proto
         ${_REFLECTION}
         ${_GRPC_GRPCPP}

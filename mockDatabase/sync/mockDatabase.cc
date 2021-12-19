@@ -2,23 +2,14 @@
 // Created by adrien on 18.12.21.
 //
 
-#include "mockDatabaseSync.h"
+#include "mockDatabase.h"
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 
 using grpc::ServerBuilder;
 using grpc::Server;
 
-
-mockDatabaseSyncImpl::mockDatabaseSyncImpl() {
-
-}
-
-mockDatabaseSyncImpl::~mockDatabaseSyncImpl() {
-
-}
-
 Status
-mockDatabaseSyncImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
+mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
                                       ::mmb::findLastMessageReply *response) {
     response->set_query_uid(request->query_uid());
     response->set_message("La la la la");
@@ -26,7 +17,7 @@ mockDatabaseSyncImpl::findLastMessage(::grpc::ServerContext *context, const ::mm
     return Service::findLastMessage(context, request, response);
 }
 
-Status mockDatabaseSyncImpl::saveMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
+Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
                                          ::mmb::saveMessageReply *response) {
     response->set_query_uid(request->query_uid());
     response->set_ok(true);
@@ -35,7 +26,7 @@ Status mockDatabaseSyncImpl::saveMessage(::grpc::ServerContext *context, const :
 
 void RunSyncServer() {
     std::string server_address("0.0.0.0:50051");
-    mockDatabaseSyncImpl service;
+    mockDatabaseImpl service;
 
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();

@@ -42,8 +42,6 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
 }
 
 
-
-
 void RunServer() {
     std::string server_address(M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS);
     messageServiceImpl service;
