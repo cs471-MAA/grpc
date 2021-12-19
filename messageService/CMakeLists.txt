@@ -11,7 +11,7 @@ target_link_libraries(messageServiceAsync
 
 
 add_executable(messageService shared/consts.h shared/Utils.h shared/Utils.cc 
-        messageService/sync/messageService.h messageService/sync/messageService.cpp 
+        messageService/sync/messageService.h messageService/sync/messageService.cc
         shared/ServerStats2.h shared/ServerStats2.cpp)
 target_link_libraries(messageService
         hw_grpc_proto

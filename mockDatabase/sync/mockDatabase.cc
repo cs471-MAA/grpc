@@ -28,7 +28,7 @@ mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::f
     
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
-    return Service::findLastMessage(context, request, response);
+    return {};
 }
 
 Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
@@ -39,7 +39,7 @@ Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb
 
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
-    return Service::saveMessage(context, request, response);
+    return {};
 }
 
 void RunServer(int workerThreads,

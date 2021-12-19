@@ -5,8 +5,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include "mock_message_board.grpc.pb.h"
-#include "../../shared/ServerStats2.h"
-#include "../../shared/Utils.h"
+#include "../shared/ServerStats2.h"
+#include "../shared/Utils.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -45,7 +45,7 @@ public:
             serverStats->add_entry(query_uid, get_epoch_time_us());
             return reply.message();
         } else {
-            std::cout << "ERROR" <<status.error_code() << ": " << status.error_message()
+            std::cout << "ERROR " <<status.error_code() << ": " << status.error_message()
                       << std::endl;
             return "RPC failed";
         }
