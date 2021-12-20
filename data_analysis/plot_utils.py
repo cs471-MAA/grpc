@@ -164,7 +164,7 @@ def compare(adf, sdf, plot, xlim=None):
     axs[1].set_title("Synchronous")
     for ax in axs:
         if xlim is None:
-            ax.set_xlim(left=max(adf.latency.min(), sdf.latency.min()), 
+            ax.set_xlim(left=min(adf.latency.min(), sdf.latency.min()), 
                     right=max(adf.latency.max(), sdf.latency.max()))
         else:
             ax.set_xlim(xlim)
