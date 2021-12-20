@@ -32,7 +32,11 @@ sanitizationServiceImpl::sanitize_message(::grpc::ServerContext *context, const 
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     grpc::ClientContext clientContext;
 
-    auto result = mockDatabaseStub_->saveMessage(&clientContext, *request, response);
+    saveMessageReply response2;
+    auto result = mockDatabaseStub_->saveMessage(&clientContext, *request, &response2);
+    response->set_ok(response2.ok());
+    response->set_query_uid(response2.query_uid());
+
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
 
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
