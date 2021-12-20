@@ -54,12 +54,11 @@ void sanitizeMessage_asyncClient::Proceed(bool ok) {
 asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
                                                  std::shared_ptr<grpc::ChannelInterface> channel,
                                                  grpc::CompletionQueue *cqClient,
-                                                 thread_pool &threadPool, 
-                                                 uint32_t meanWaitingTime, 
+                                                 uint32_t meanWaitingTime,
                                                  uint32_t stdWaitingTime,       
                                                  std::shared_ptr<ServerStats2> serverStats)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
-          channel(std::move(channel)), threadPool(threadPool), meanWaitingTime(meanWaitingTime),
+          channel(std::move(channel)), meanWaitingTime(meanWaitingTime),
           stdWaitingTime(stdWaitingTime), serverStats(std::move(serverStats)) {
 
     // As part of the initial CREATE state, we *request* that the system
@@ -67,8 +66,7 @@ asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *s
     // the tag uniquely identifying the request (so that different CallData
     // instances can serve different requests concurrently), in this case
     // the memory address of this CallData instance.
-    service_->RequestsendMessage(&ctx_, &request_, &responder_, cq_, cq_,
-                                 this);
+    service_->RequestsendMessage(&ctx_, &request_, &responder_, cq_, cq_, this);
 }
 
 void asyncSendMessageHandler::Proceed(bool ok) {
@@ -76,22 +74,17 @@ void asyncSendMessageHandler::Proceed(bool ok) {
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
         // The actual processing.
+        //auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+        auto work = fake_worker(meanWaitingTime);
+        request_.set_compute(work);
+        auto asyncClient = new sanitizeMessage_asyncClient(channel, cqClient, this);
+        asyncClient->sanitizeMessage(request_);
 
-        threadPool.push_task([&](){
-
-            auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
-            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((t))));
-
-            status_ = FINISH;
-            auto asyncClient = new sanitizeMessage_asyncClient(channel, cqClient, this);
-            asyncClient->sanitizeMessage(request_);
-
-        });
 
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new asyncSendMessageHandler(service_, cq_, channel, cqClient, threadPool, meanWaitingTime, stdWaitingTime, serverStats);
+        new asyncSendMessageHandler(service_, cq_, channel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
     } else {
         GPR_ASSERT(status_ == FINISH);
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());

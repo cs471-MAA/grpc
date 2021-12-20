@@ -21,19 +21,23 @@ message saveMessageRequest {
   string client_id = 1;
   string message = 2;
   uint64 query_uid = 3;
+  double compute = 4;
 }
 
 message saveMessageReply {
   bool ok = 1;
   uint64 query_uid = 2;
+  double compute = 3;
 }
 
 message findLastMessageRequest {
   string client_id = 1;
   uint64 query_uid = 2;
+  double compute = 3;
 }
 
 message findLastMessageReply {
   string message = 1;
   uint64 query_uid = 2;
+  double compute = 3;
 }

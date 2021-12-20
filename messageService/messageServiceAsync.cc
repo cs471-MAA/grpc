@@ -7,8 +7,8 @@
 
 using namespace std;
 
-messageServiceAsyncImpl::messageServiceAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime):
-        threadPool(workerThreads), meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
+messageServiceAsyncImpl::messageServiceAsyncImpl(uint32_t meanWaitingTime, uint32_t stdWaitingTime):
+    meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
     serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR MESSAGE_SERVICE_ASYNC_FILENAME);
 }
 
@@ -19,7 +19,7 @@ messageServiceAsyncImpl::~messageServiceAsyncImpl() {
     cq2_->Shutdown();
 }
 
-void messageServiceAsyncImpl::Run() {
+void messageServiceAsyncImpl::Run(unsigned long workerThreads) {
     std::string server_address(M_MESSAGE_SERVICE_SOCKET_ADDRESS);
 
     grpc::ServerBuilder builder;
@@ -30,17 +30,19 @@ void messageServiceAsyncImpl::Run() {
     builder.RegisterService(&service_);
     // Get hold of the completion queue used for the asynchronous communication
     // with the gRPC runtime.
-    cq_ = builder.AddCompletionQueue();
-    cq2_ = builder.AddCompletionQueue();
+    for (unsigned long i = 0; i < workerThreads; ++i){
+        cqVect.emplace_back(builder.AddCompletionQueue());
+    }
     // Finally assemble the server.
     server_ = builder.BuildAndStart();
     std::cout << "Server listening on " << server_address << std::endl;
 
     // Proceed to the server's main loop.
-    std::thread thread1 = std::thread(&messageServiceAsyncImpl::HandleRpcs, this, cq_.get());
-    std::thread thread2 = std::thread(&messageServiceAsyncImpl::HandleRpcs, this, cq2_.get());
-    thread1.join();  // blocks forever
-    thread2.join();  // blocks forever
+    for (unsigned long i = 0; i < workerThreads; ++i){
+        workerThreadsVect.emplace_back(std::thread(&messageServiceAsyncImpl::HandleRpcs, this, cqVect.at(i).get()));
+    }
+
+    workerThreadsVect.at(0).join();  // blocks forever
 }
 
 void messageServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
@@ -53,8 +55,8 @@ void messageServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
     std::thread threadClient = std::thread(&messageServiceAsyncImpl::HandleChannel, cqClient);
 
     // Spawn a new CallData instance to serve new clients.
-    new asyncFindLastMessageHandler(&service_, cq, DBchannel, cqClient, threadPool, meanWaitingTime, stdWaitingTime, serverStats);
-    new asyncSendMessageHandler(&service_, cq, Sanitchannel, cqClient, threadPool,meanWaitingTime, stdWaitingTime, serverStats);
+    new asyncFindLastMessageHandler(&service_, cq, DBchannel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
+    new asyncSendMessageHandler(&service_, cq, Sanitchannel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -86,14 +88,15 @@ void messageServiceAsyncImpl::HandleChannel(CompletionQueue *cq) {
 
 
 int main(int argc, char **argv) {
+    cout << "Number of available cores: " << std::thread::hardware_concurrency() << endl;
 
     int i = 0;
     unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 1;
-    uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
-    uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
+    uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 20);
+    uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 20);
 
-    messageServiceAsyncImpl server(workerThreads, meanWaitingTime, stdWaitingTime);
-    server.Run();
+    messageServiceAsyncImpl server(meanWaitingTime, stdWaitingTime);
+    server.Run(workerThreads);
 
     return 0;
 }

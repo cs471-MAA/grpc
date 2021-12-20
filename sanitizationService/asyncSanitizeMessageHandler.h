@@ -65,7 +65,6 @@ public:
     asyncSanitizeMessageHandler(sanitizationService::AsyncService *service, ServerCompletionQueue *cq,
                                 std::shared_ptr<grpc::ChannelInterface> channel, 
                                 grpc::CompletionQueue *cqClient,
-                                thread_pool &threadPool, 
                                 uint32_t meanWaitingTime, 
                                 uint32_t stdWaitingTime,
                                 std::shared_ptr<ServerStats2> serverStats);
@@ -102,7 +101,6 @@ private:
     };
     std::atomic<CallStatus> status_;  // The current serving state.
 
-    thread_pool &threadPool;
     uint32_t meanWaitingTime;
     uint32_t stdWaitingTime;
     std::shared_ptr<ServerStats2> serverStats;

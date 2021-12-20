@@ -53,12 +53,11 @@ asyncFindLastMessageHandler::asyncFindLastMessageHandler(messageService::AsyncSe
                                                          ServerCompletionQueue *cq,
                                                          std::shared_ptr<grpc::ChannelInterface> channel,
                                                          grpc::CompletionQueue *cqClient,
-                                                         thread_pool &threadPool, 
-                                                         uint32_t meanWaitingTime, 
+                                                         uint32_t meanWaitingTime,
                                                          uint32_t stdWaitingTime,
                                                          std::shared_ptr<ServerStats2> serverStats)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
-          channel(std::move(channel)), threadPool(threadPool), meanWaitingTime(meanWaitingTime),
+          channel(std::move(channel)), meanWaitingTime(meanWaitingTime),
           stdWaitingTime(stdWaitingTime), serverStats(std::move(serverStats)) {
 
     // As part of the initial CREATE state, we *request* that the system
@@ -73,21 +72,17 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
-        threadPool.push_task([&](){
-
-            auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
-            std::this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
-
-            status_ = FINISH;
-            auto asyncClient = new findLastMessage_asyncClient(channel, cqClient, this);
-            asyncClient->findLastMessage(request_);
-        });
+        auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+        auto work = fake_worker(meanWaitingTime);
+        request_.set_compute(work);
+        auto asyncClient = new findLastMessage_asyncClient(channel, cqClient, this);
+        asyncClient->findLastMessage(request_);
 
         
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
-        new asyncFindLastMessageHandler(service_, cq_, channel, cqClient, threadPool, meanWaitingTime, stdWaitingTime, serverStats);
+        new asyncFindLastMessageHandler(service_, cq_, channel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
     } else {
         GPR_ASSERT(status_ == FINISH);
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());

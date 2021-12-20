@@ -66,8 +66,7 @@ public:
     asyncFindLastMessageHandler(messageService::AsyncService *service, ServerCompletionQueue *cq,
                                 std::shared_ptr<grpc::ChannelInterface> channel, 
                                 grpc::CompletionQueue *cqClient,
-                                thread_pool &threadPool, 
-                                uint32_t meanWaitingTime, 
+                                uint32_t meanWaitingTime,
                                 uint32_t stdWaitingTime,
                                 std::shared_ptr<ServerStats2> serverStats);
 
@@ -79,7 +78,6 @@ private:
     void FinishWithError();
 
     grpc::CompletionQueue *cqClient;
-    thread_pool &threadPool;
     uint32_t meanWaitingTime;
     uint32_t stdWaitingTime;
     const std::shared_ptr<grpc::ChannelInterface> channel;

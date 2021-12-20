@@ -11,12 +11,12 @@ using mmb::mockDatabase;
 
 class sanitizationServiceAsyncImpl final {
 public:
-    sanitizationServiceAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime);
+    sanitizationServiceAsyncImpl(uint32_t meanWaitingTime, uint32_t stdWaitingTime);
 
     ~sanitizationServiceAsyncImpl();
 
     // There is no shutdown handling in this code.
-    void Run();
+    void Run(unsigned long workerThreads);
 
 private:
 
@@ -25,10 +25,10 @@ private:
 
     static void HandleChannel(CompletionQueue *cq);
 
-    std::unique_ptr<ServerCompletionQueue> cq_;
+    std::vector<std::unique_ptr<ServerCompletionQueue>> cqVect;
+    std::vector<std::thread> workerThreadsVect;
     mmb::sanitizationService::AsyncService service_;
     std::unique_ptr<Server> server_;
-    thread_pool threadPool;
     uint32_t meanWaitingTime;
     uint32_t stdWaitingTime;
     std::shared_ptr<ServerStats2> serverStats;

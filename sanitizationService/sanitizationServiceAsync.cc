@@ -6,20 +6,18 @@
 
 using namespace std;
 
-sanitizationServiceAsyncImpl::sanitizationServiceAsyncImpl(std::uint_fast32_t workerThreads,
-                                                           uint32_t meanWaitingTime,
+sanitizationServiceAsyncImpl::sanitizationServiceAsyncImpl(uint32_t meanWaitingTime,
                                                            uint32_t stdWaitingTime)
-        : threadPool(workerThreads), meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
+        : meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
     serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR SANITIZATION_SERVICE_ASYNC_FILENAME);
 }
 
 sanitizationServiceAsyncImpl::~sanitizationServiceAsyncImpl() {
     server_->Shutdown();
     // Always shutdown the completion queue after the server.
-    cq_->Shutdown();
 }
 
-void sanitizationServiceAsyncImpl::Run() {
+void sanitizationServiceAsyncImpl::Run(unsigned long workerThreads) {
     std::string server_address = M_SANITIZATION_SERVICE_SOCKET_ADDRESS;
 
     grpc::ServerBuilder builder;
@@ -30,14 +28,19 @@ void sanitizationServiceAsyncImpl::Run() {
     builder.RegisterService(&service_);
     // Get hold of the completion queue used for the asynchronous communication
     // with the gRPC runtime.
-    cq_ = builder.AddCompletionQueue();
+    for (unsigned long i = 0; i < workerThreads; ++i){
+        cqVect.emplace_back(builder.AddCompletionQueue());
+    }
     // Finally assemble the server.
     server_ = builder.BuildAndStart();
     std::cout << "Server listening on " << server_address << std::endl;
 
     // Proceed to the server's main loop.
-    std::thread thread1 = std::thread(&sanitizationServiceAsyncImpl::HandleRpcs, this, cq_.get());
-    thread1.join();  // blocks forever
+    for (unsigned long i = 0; i < workerThreads; ++i){
+        workerThreadsVect.emplace_back(std::thread(&sanitizationServiceAsyncImpl::HandleRpcs, this, cqVect.at(i).get()));
+    }
+
+    workerThreadsVect.at(0).join();  // blocks forever
 }
 
 void sanitizationServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
@@ -48,7 +51,7 @@ void sanitizationServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
     std::thread threadClient = std::thread(&sanitizationServiceAsyncImpl::HandleChannel, cqClient);
 
     // Spawn a new CallData instance to serve new clients.
-    new asyncSanitizeMessageHandler(&service_, cq, DBchannel, cqClient, threadPool, meanWaitingTime, stdWaitingTime, serverStats);
+    new asyncSanitizeMessageHandler(&service_, cq, DBchannel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
     void *tag;  // uniquely identifies a request.
     bool ok;
     while (true) {
@@ -86,8 +89,8 @@ int main(int argc, char **argv) {
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
 
-    sanitizationServiceAsyncImpl server(workerThreads, meanWaitingTime, stdWaitingTime);
-    server.Run();
+    sanitizationServiceAsyncImpl server(meanWaitingTime, stdWaitingTime);
+    server.Run(workerThreads);
 
     return 0;
 }

@@ -10,6 +10,12 @@ services:
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
+        deploy:
+            resources:
+                limits:
+                    cpus: '1'
+                reservations:
+                    cpus: '1'
 
     sanitization-service:
         image: saheru/grpc-benchmark
@@ -23,6 +29,12 @@ services:
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
+        deploy:
+            resources:
+                limits:
+                    cpus: '1'
+                reservations:
+                    cpus: '1'
 
     message-service:
         image: saheru/grpc-benchmark
@@ -37,6 +49,12 @@ services:
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
+        deploy:
+            resources:
+                limits:
+                    cpus: '1'
+                reservations:
+                    cpus: '1'
 
     client:
         image: saheru/grpc-benchmark

@@ -60,7 +60,7 @@ string exec(const char* cmd) {
 double fake_worker(float factor){
     double a = 1;
     // MAGIC FACTOR FOUND BY TESTING THE FUNCTION
-    uint64_t iterations = (uint64_t) (factor * 61.22369) ;
+    auto iterations = static_cast<uint64_t>(factor * 61.22369);
     for (uint64_t i=0; i < iterations; i++){
         // RANDOM GARBAGE OPERATIONS
         a += powf64(a, 6000);
@@ -70,8 +70,9 @@ double fake_worker(float factor){
 }
 
 float normal_distributed_value(float mean, float std){
-    random_device dev;
-    mt19937 generator(dev());
-    normal_distribution<float> normal_dist(mean, std);
-    return normal_dist(generator);
+    //random_device dev;
+    //mt19937 generator(dev());
+    //normal_distribution<float> normal_dist(mean, std);
+    // normal_dist(generator)
+    return mean;
 }

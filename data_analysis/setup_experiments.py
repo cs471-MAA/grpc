@@ -77,7 +77,3 @@ else:
                     N=2500
                     )
     create_env_file_from_dict(e)
-
-
-
-            

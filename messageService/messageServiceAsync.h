@@ -11,12 +11,12 @@ using mmb::mockDatabase;
 
 class messageServiceAsyncImpl final {
 public:
-    messageServiceAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime);
+    messageServiceAsyncImpl(uint32_t meanWaitingTime, uint32_t stdWaitingTime);
 
     ~messageServiceAsyncImpl();
 
     // There is no shutdown handling in this code.
-    void Run();
+    void Run(unsigned long workerThreads);
 
 private:
 
@@ -25,11 +25,12 @@ private:
 
     static void HandleChannel(CompletionQueue *cq);
 
+    std::vector<std::unique_ptr<ServerCompletionQueue>> cqVect;
+    std::vector<std::thread> workerThreadsVect;
     std::unique_ptr<ServerCompletionQueue> cq_;
     std::unique_ptr<ServerCompletionQueue> cq2_;
     uint32_t meanWaitingTime;
     uint32_t stdWaitingTime;
-    thread_pool threadPool;
     mmb::messageService::AsyncService service_;
     std::unique_ptr<Server> server_;
     std::shared_ptr<ServerStats2> serverStats;

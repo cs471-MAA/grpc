@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import os
 
-DATA_DIR = "container_files/default/"
+DATA_DIR = "../stats_files/"
 SYNC_CLIENT_FN = "clientSync.csv"
 SYNC_MSGSERV_FN = "messageServiceSync.csv"
 SYNC_SANITSERV_FN = "sanitServiceSync.csv"
@@ -192,12 +192,13 @@ def main(data_dirpath, async_data=True, verbose=False):
         if client_uid == 0:
             continue
         
-        plot_calls_cascade(df, verbose=verbose)
+        #plot_calls_cascade(df, verbose=verbose)
+        plot_tail_latency_advanced(df, plt.axes())
     
     
 
 if __name__ == "__main__":
     main(DATA_DIR, async_data=True, verbose=True)
-    main(DATA_DIR, async_data=False, verbose=True)
+    #main(DATA_DIR, async_data=False, verbose=True)
     
     plt.show()
