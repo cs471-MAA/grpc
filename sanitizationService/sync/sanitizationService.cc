@@ -55,6 +55,8 @@ void RunServer(int workerThreads,
     // clients. In this case it corresponds to an *synchronous* service.
     builder.RegisterService(&service);
     // Finally assemble the server.
+    auto r = grpc::ResourceQuota();
+    builder.SetResourceQuota(r.SetMaxThreads(workerThreads));
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
     std::cout << "Server listening on " << server_address << std::endl;
 

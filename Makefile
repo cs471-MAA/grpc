@@ -8,3 +8,12 @@ build-image-benchmark:
 
 build-image-grpc:
 	docker build -m 6G -t ${MAIN_IMAGE_NAME} -f grpc.dockerfile .
+
+run_async:
+	docker-compose up
+
+run_sync:
+	docker-compose -f docker-compose-sync.yml up
+
+plot:
+	python data_analysis/plot_utils.py
