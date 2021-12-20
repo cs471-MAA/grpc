@@ -30,7 +30,7 @@ docker stack deploy --compose-file docker-compose.yml grpc
 You can now list the running services with `docker stack services grpc`. You can also see the hostname aliases with:
 
 ```shell
-docker service inspect --format='{{json .Spec.TaskTemplate.Networks}}' <service-name>
+docker service inspect --format='{{json .Spec.TaskTemplate.ContainerSpec.Hostname}}' <service-name>
 ```
 
 Finally, to bring the stack down use:
