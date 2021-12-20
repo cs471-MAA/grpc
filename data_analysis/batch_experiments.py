@@ -1,5 +1,10 @@
 import sys
 import pandas as pd
+# PINNED VALUES
+PINNED_t_BACK=50000
+PINNED_s_BACK=10000
+PINNED_SEED=3
+PINNED_N=2500
 
 def generate_parameter_files():
 
@@ -13,7 +18,6 @@ def generate_parameter_files():
     back_end_worker_numbers = [64]
     mean_delays = [0, 4000, 100000]
     std_delays = [0, 4000, 200000]
-
 
     df_builder = []
     
@@ -41,11 +45,13 @@ def generate_parameter_files():
     print(df)
     return df
 
-def create_entry(P, W_BACK, W_MID, t_MID, s_MID, t_FRO=10000, s_FRO=8000, t_BACK=50000, s_BACK=10000 ,SEED=3, N=2500):
+def create_entry(P, W_BACK, W_MID, t_MID, s_MID, t_FRO=10000, s_FRO=8000):
+
     STATSDIR = f"P{int(P*100)}_Wback{W_BACK}_Wmid{W_MID}_tmid{t_MID}_smid{s_MID}_tfro{t_FRO}_sfro{s_FRO}"
     return {"STATSDIR": STATSDIR, "P":P, "W_MSG":W_MID,"W_SANIT":W_MID,
                 "t_MSG" :t_MID, "s_MSG" :s_MID, "t_SANIT" :t_MID, "s_SANIT" :s_MID,
-                "t_DELAY" :t_FRO, "s_DELAY" :s_FRO, "W_MOCK":W_BACK, "t_MOCK": t_BACK, "s_MOCK": s_BACK, "SEED": SEED, "N": N}
+                "t_DELAY" :t_FRO, "s_DELAY" :s_FRO, "W_MOCK":W_BACK, 
+                "t_MOCK": PINNED_t_BACK, "s_MOCK": PINNED_s_BACK, "SEED": PINNED_SEED, "N": PINNED_N}
     
 def create_env_file(df, index):
     print(df.iloc[index])
@@ -62,15 +68,15 @@ def create_env_file_from_dict(d):
 # df = generate_parameter_files()
 # df.to_csv("data_analysis/experiments.csv", sep=",", index=False)
 
-df = pd.read_csv("data_analysis/experiments.csv") 
 if len(sys.argv) > 1:
+    df = pd.read_csv("data_analysis/experiments.csv") 
     create_env_file(df, int(sys.argv[1]))
 else:
     e = create_entry(P=0.5,
                  W_BACK=64,
                  W_MID=16,
-                 t_MID=1000,
-                 s_MID=1000,
+                 t_MID=10000,
+                 s_MID=10000,
                 t_FRO=100, 
                 s_FRO=100
                  )
