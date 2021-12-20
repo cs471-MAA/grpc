@@ -31,9 +31,9 @@ mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::f
     } else {
         response->set_message("Client ID not found");
     }
-    
-    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
-    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
+
+    auto work = fake_worker(meanWaitingTime);
+    response->set_compute(work);
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return {};
 }
@@ -46,8 +46,8 @@ Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb
     hashMap->insert(request->client_id(), request->message());
 
 
-    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
-    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
+    auto work = fake_worker(meanWaitingTime);
+    response->set_compute(work);
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return {};
 }

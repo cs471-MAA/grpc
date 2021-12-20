@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import os
 
-DATA_DIR = "../stats_files/"
+DATA_DIR = "../container_files/P50_Wmid4_tmid100_smid0_tfro30_sfro10_N2500/"
 SYNC_CLIENT_FN = "clientSync.csv"
 SYNC_MSGSERV_FN = "messageServiceSync.csv"
 SYNC_SANITSERV_FN = "sanitServiceSync.csv"
@@ -157,7 +157,7 @@ def plot_tail_latency(df, ax=None, percs=[90, 99, 99.9], cmap="tab10", cumulativ
     return ax
 
 def compare(adf, sdf, plot, xlim=None):
-    fig, axs = plt.subplots(2,1, figsize=(10,10))
+    fig, axs = plt.subplots(2,1, figsize=(10, 10))
     plot(adf, axs[0])
     axs[0].set_title("Asynchronous")
     plot(sdf, axs[1])
@@ -186,18 +186,14 @@ def compare_calls_cascade(adf, sdf):
 
 def main(data_dirpath, async_data=True, verbose=False):
 
-    all = get_data(data_dirpath, async_data=async_data, verbose=verbose)
-    
-    for client_uid, df in all.items():
-        if client_uid == 0:
-            continue
-        
-        plot_calls_cascade(df, verbose=verbose)
-        #plot_tail_latency_advanced(df, plt.axes())
+    all_async = get_data(data_dirpath, async_data=True, verbose=verbose)
+    all_sync = get_data(data_dirpath, async_data=False, verbose=verbose)
+
+    compare_calls_cascade(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
+    compare_tail_latency(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
 
 
 if __name__ == "__main__":
     main(DATA_DIR, async_data=True, verbose=True)
-    #main(DATA_DIR, async_data=False, verbose=True)
     
     plt.show()

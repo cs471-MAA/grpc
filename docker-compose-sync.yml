@@ -6,7 +6,7 @@ services:
         ports:
             - 20011:10011
         entrypoint:
-            ["/app/cmake/build/mockDatabase", "${W_MOCK}", "${t_MOCK}", "${s_MOCK}"]
+            ["taskset", "1", "/app/cmake/build/mockDatabase", "${W_MOCK}", "${t_MOCK}", "${s_MOCK}"]
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
@@ -17,7 +17,7 @@ services:
         ports:
             - 20013:10013
         entrypoint:
-            ["/app/cmake/build/sanitizationService", "${W_SANIT}", "${t_SANIT}", "${s_SANIT}"]
+            ["taskset", "3", "/app/cmake/build/sanitizationService", "${W_SANIT}", "${t_SANIT}", "${s_SANIT}"]
         depends_on:
             - mock-database
         volumes:
@@ -30,7 +30,7 @@ services:
         ports:
             - 20012:10012
         entrypoint:
-            ["/app/cmake/build/messageService", "${W_MSG}", "${t_MSG}", "${s_MSG}"]
+            ["taskset", "5", "/app/cmake/build/messageService", "${W_MSG}", "${t_MSG}", "${s_MSG}"]
         depends_on:
             - mock-database
             - sanitization-service
