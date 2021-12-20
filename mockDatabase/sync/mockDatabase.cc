@@ -3,10 +3,11 @@
 //
 
 #include "mockDatabase.h"
-#include "../../shared/consts.h"
+#include "../shared/consts.h"
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/resource_quota.h>
 #include <thread>
+#include <utility>
 
 using grpc::ResourceQuota;
 using grpc::ServerBuilder;
@@ -14,17 +15,24 @@ using grpc::Server;
 using namespace std;
 
 mockDatabaseImpl::mockDatabaseImpl(uint32_t meanWaitingTime,
-                                  uint32_t stdWaitingTime):
+                                  uint32_t stdWaitingTime, std::shared_ptr<CTSL::HashMap<std::string, std::string>> hashMap):
     meanWaitingTime(meanWaitingTime), 
     stdWaitingTime(stdWaitingTime),
-    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MOCK_DATABASE_SYNC_FILENAME)) {}
+    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MOCK_DATABASE_SYNC_FILENAME)),
+    hashMap(std::move(hashMap)){}
 
 Status
 mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
                                       ::mmb::findLastMessageReply *response) {
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     response->set_query_uid(request->query_uid());
-    response->set_message("La la la la");
+
+    std::string result;
+    if (hashMap->find(request->client_id(), result)) {
+        response->set_message(result);
+    } else {
+        response->set_message("Client ID not found");
+    }
     
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
@@ -36,6 +44,8 @@ Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     response->set_query_uid(request->query_uid());
     response->set_ok(true);
+    hashMap->insert(request->client_id(), request->message());
+
 
     this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
@@ -46,7 +56,8 @@ void RunServer(int workerThreads,
                    uint32_t meanWaitingTime,
                    uint32_t stdWaitingTime) {
     std::string server_address(M_MOCK_DATABASE_SYNC_SOCKET_ADDRESS);
-    mockDatabaseImpl service(meanWaitingTime, stdWaitingTime);
+    auto hashMap = std::make_shared<CTSL::HashMap<std::string, std::string>>();
+    mockDatabaseImpl service(meanWaitingTime, stdWaitingTime, hashMap);
 
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
