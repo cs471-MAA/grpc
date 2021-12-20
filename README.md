@@ -27,6 +27,18 @@ docker stack deploy --compose-file docker-compose.yml grpc
 
 You can now list the running services with `docker stack services grpc`.
 
+Finally, to bring the stack down use:
+
+```shell
+docker stack rm grpc
+```
+
+And to stop docker swarm:
+
+```shell
+docker swarm leave --force
+```
+
 # Old
 
 ```
