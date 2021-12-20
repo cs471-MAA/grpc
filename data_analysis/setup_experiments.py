@@ -63,10 +63,10 @@ def create_env_file_from_dict(d):
             f.write(f"{col}={x}\n")
 
 # df = generate_parameter_files()
-# df.to_csv("data_analysis/experiments.csv", sep=",", index=False)
+# df.to_csv("data_analysis/possible_experiments.csv", sep=",", index=False)
 
 if len(sys.argv) > 1:
-    df = pd.read_csv("data_analysis/experiments.csv") 
+    df = pd.read_csv("data_analysis/possible_experiments.csv") 
     create_env_file(df, int(sys.argv[1]))
 else:
     e = create_entry(P=0.5,
