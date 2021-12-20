@@ -192,10 +192,9 @@ def main(data_dirpath, async_data=True, verbose=False):
         if client_uid == 0:
             continue
         
-        #plot_calls_cascade(df, verbose=verbose)
-        plot_tail_latency_advanced(df, plt.axes())
-    
-    
+        plot_calls_cascade(df, verbose=verbose)
+        #plot_tail_latency_advanced(df, plt.axes())
+
 
 if __name__ == "__main__":
     main(DATA_DIR, async_data=True, verbose=True)

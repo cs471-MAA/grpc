@@ -69,11 +69,11 @@ if len(sys.argv) > 1:
     create_env_file(df, int(sys.argv[1]))
 else:
     e = create_entry(P=0.5,
-                    W_MID=512,
-                    t_MID=0,
+                    W_MID=4,
+                    t_MID=100,
                     s_MID=0,
-                    t_FRO=100, 
-                    s_FRO=100,
+                    t_FRO=30,
+                    s_FRO=10,
                     N=2500
                     )
     create_env_file_from_dict(e)

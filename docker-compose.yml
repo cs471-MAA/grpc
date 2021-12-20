@@ -6,16 +6,10 @@ services:
         ports:
             - 20001:10001
         entrypoint:
-            ["/app/cmake/build/mockDatabaseAsync", "${W_MOCK}", "${t_MOCK}", "${s_MOCK}"]
+            ["taskset", "1", "/app/cmake/build/mockDatabaseAsync", "${W_MOCK}", "${t_MOCK}", "${s_MOCK}"]
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
-        deploy:
-            resources:
-                limits:
-                    cpus: '1'
-                reservations:
-                    cpus: '1'
 
     sanitization-service:
         image: saheru/grpc-benchmark
@@ -23,18 +17,12 @@ services:
         ports:
             - 20003:10003
         entrypoint:
-            ["/app/cmake/build/sanitizationServiceAsync", "${W_SANIT}", "${t_SANIT}", "${s_SANIT}"]
+            ["taskset", "3", "/app/cmake/build/sanitizationServiceAsync", "${W_SANIT}", "${t_SANIT}", "${s_SANIT}"]
         depends_on:
             - mock-database
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
-        deploy:
-            resources:
-                limits:
-                    cpus: '1'
-                reservations:
-                    cpus: '1'
 
     message-service:
         image: saheru/grpc-benchmark
@@ -42,19 +30,13 @@ services:
         ports:
             - 20002:10002
         entrypoint:
-            ["/app/cmake/build/messageServiceAsync", "${W_MSG}", "${t_MSG}", "${s_MSG}"]
+            ["taskset", "5", "/app/cmake/build/messageServiceAsync", "${W_MSG}", "${t_MSG}", "${s_MSG}"]
         depends_on:
             - mock-database
             - sanitization-service
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
-        deploy:
-            resources:
-                limits:
-                    cpus: '1'
-                reservations:
-                    cpus: '1'
 
     client:
         image: saheru/grpc-benchmark
