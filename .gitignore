@@ -4,4 +4,5 @@ Session.vim
 .undodir/**
 build
 .vscode
-container_files/*
+container_files/default/*
+!container_files/default/.gitkeep
