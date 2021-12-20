@@ -42,8 +42,8 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
 
     response->set_message(response2.message());
     response->set_query_uid(response2.query_uid());
-
-    this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
+    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
 
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
 
@@ -63,7 +63,8 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     response->set_ok(response2.ok());
     response->set_query_uid(response2.query_uid());
 
-    this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
+    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
 
     return result;
@@ -85,9 +86,11 @@ void RunServer(int workerThreads,
     // clients. In this case it corresponds to an *synchronous* service.
     builder.RegisterService(&service);
 
-    auto r = grpc::ResourceQuota();
-    builder.SetResourceQuota(r.SetMaxThreads(workerThreads));
-    
+    // auto r = grpc::ResourceQuota();
+    // builder.SetResourceQuota(r.SetMaxThreads(workerThreads + 1));
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS, workerThreads);
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS , workerThreads);
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::CQ_TIMEOUT_MSEC, 100000);
     // Finally assemble the server
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());

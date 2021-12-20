@@ -76,7 +76,7 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
         threadPool.push_task([&](){
 
             auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
-            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((t))));
+            std::this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
 
             status_ = FINISH;
             auto asyncClient = new findLastMessage_asyncClient(channel, cqClient, this);

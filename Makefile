@@ -15,5 +15,11 @@ run_async:
 run_sync:
 	docker-compose -f docker-compose-sync.yml up
 
+exp_async:
+	docker-compose --env-file .env.custom up
+
+exp_sync:
+	docker-compose --env-file .env.custom -f docker-compose-sync.yml up
+
 plot:
 	python data_analysis/plot_utils.py

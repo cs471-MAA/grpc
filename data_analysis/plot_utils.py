@@ -74,7 +74,7 @@ def get_data(dirpath, async_data=True, time_factor=1000.0, as_dict=True, verbose
     all = all[["client_uid", "query_index", 
             "start_client", "start_msg", "start_sanit", "start_mock",
             "end_mock", "end_sanit", "end_msg", "end_client"]]
-
+    all["latency"] = all["end_client"] - all["start_client"]
     all = all.groupby("client_uid")
     
     if as_dict:
@@ -82,10 +82,10 @@ def get_data(dirpath, async_data=True, time_factor=1000.0, as_dict=True, verbose
     else: 
         return all
 
-def plot_trace(X1, X2, Y, color, label, w):
+def plot_trace(X1, X2, Y, color, label, w, ax):
     U = X2 - X1
     V = Y - Y
-    plt.quiver(X1, Y, U, V,
+    ax.quiver(X1, Y, U, V,
             color=color, label=label, scale_units="xy", scale=1,
             units="y", width=w,
             # remove arrow head
@@ -94,26 +94,22 @@ def plot_trace(X1, X2, Y, color, label, w):
 def new_default_figure():
     plt.figure(figsize=(10, 10), dpi=80)
 
-def plot_calls_cascade(client_uid, df, verbose=False):
+def plot_calls_cascade(df, ax=None, verbose=False):
     # if df.end_client.isnull().values.any():
     #     continue
-    if client_uid == 0:
-        if verbose:
-            print("Weird behavior here:")
-            print(df)
-        return 
+    if ax is None:
+        ax = plt.axes()
     
-    new_default_figure()
     # print(df)
     # plt.plot(df.start_client, df.query_index, ".", color="#145ac9",label="Client Start")
     # plt.plot(df.end_client, df.query_index, ".", color="#2dbaed",label="Client End")
 
     w = 0.95 #df.end_client.max() / 100
 
-    plot_trace(df.start_client, df.end_client, df.query_index, color="#145ac9", label="Client", w=w*0.99)
-    plot_trace(df.start_msg, df.end_msg, df.query_index, color="#139415", label="Message Service", w=w*0.75)
-    plot_trace(df.start_sanit, df.end_sanit, df.query_index, color="#bdb21c", label="Sanitize Service", w=w*0.5)
-    plot_trace(df.start_mock, df.end_mock, df.query_index, color="#a12810", label="Mock database", w=w*0.25)
+    plot_trace(df.start_client, df.end_client, df.query_index, color="#145ac9", label="Client", w=w*0.99, ax=ax)
+    plot_trace(df.start_msg, df.end_msg, df.query_index, color="#139415", label="Message Service", w=w*0.75, ax=ax)
+    plot_trace(df.start_sanit, df.end_sanit, df.query_index, color="#bdb21c", label="Sanitize Service", w=w*0.5, ax=ax)
+    plot_trace(df.start_mock, df.end_mock, df.query_index, color="#a12810", label="Mock database", w=w*0.25, ax=ax)
 
     if verbose:
         print(f'{w=}')
@@ -127,14 +123,16 @@ def plot_calls_cascade(client_uid, df, verbose=False):
     plt.xlabel("time [ms]")
     plt.xlim(-df.end_client.max()*0.01, df.end_client.max()*1.01)
     plt.legend()
+    return ax
     
-def plot_tail_latency(data, percs=[90, 99, 99.9], cmap="tab10",ax=None):
-       
+def plot_tail_latency(df, ax=None, percs=[90, 99, 99.9], cmap="tab10", cumulative=True, density=True, alpha=1.0):
+
+    data = df["latency"].values
     if ax is None:
         ax = plt.axes()
     percentiles = np.nanpercentile(data, percs)
     colormap = plt.cm.get_cmap(cmap)
-    _, bins, patches = ax.hist(data, bins=max(len(data)//4, 100), cumulative=True)
+    _, bins, patches = ax.hist(data, bins=max(len(data)//4, 100), cumulative=cumulative, density=density)
 
     for patch, bin in zip(patches, bins):
         i = 0
@@ -143,6 +141,7 @@ def plot_tail_latency(data, percs=[90, 99, 99.9], cmap="tab10",ax=None):
                 i+=1
         
         rgba = colormap(i)
+        rgba = (rgba[0], rgba[1], rgba[2], alpha)
         patch.set_facecolor(rgba)
 
         
@@ -157,13 +156,43 @@ def plot_tail_latency(data, percs=[90, 99, 99.9], cmap="tab10",ax=None):
     
     return ax
 
+def compare(adf, sdf, plot, xlim=None):
+    fig, axs = plt.subplots(2,1, figsize=(10,10))
+    plot(adf, axs[0])
+    axs[0].set_title("Asynchronous")
+    plot(sdf, axs[1])
+    axs[1].set_title("Synchronous")
+    for ax in axs:
+        if xlim is None:
+            ax.set_xlim(left=max(adf.latency.min(), sdf.latency.min()), 
+                    right=max(adf.latency.max(), sdf.latency.max()))
+        else:
+            ax.set_xlim(xlim)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+    return axs
+
+def plot_tail_latency_advanced(df, ax):
+    plot_tail_latency(df, cumulative=False, alpha=0.9, ax=ax)
+    plot_tail_latency(df, cumulative=True, alpha=0.25, ax=ax)
+
+def compare_tail_latency(adf, sdf):
+    return compare(adf, sdf, plot_tail_latency_advanced)
+
+def compare_calls_cascade(adf, sdf):
+    return compare(adf, sdf, plot_calls_cascade, xlim=(0, max(adf.end_client.max(), sdf.end_client.max())))
 
 def main(data_dirpath, async_data=True, verbose=False):
 
     all = get_data(data_dirpath, async_data=async_data, verbose=verbose)
     
     for client_uid, df in all.items():
-        plot_calls_cascade(client_uid, df, verbose=verbose)
+        if client_uid == 0:
+            continue
+        
+        plot_calls_cascade(df, verbose=verbose)
     
     
 

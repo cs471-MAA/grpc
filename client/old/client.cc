@@ -5,6 +5,7 @@
 #include <random>
 #include "client.h"
 #include "../shared/consts.h"
+#include <thread>
 
 using namespace std;
 
@@ -24,22 +25,29 @@ int main(int argc, char** argv) {
         generator.seed(stoi(argv[i]));
 
     std::shared_ptr<ServerStats2> serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR CLIENT_SYNC_FILENAME);
-    Client client(grpc::CreateChannel(M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()),
-                  serverStats);
+    shared_ptr<Client> client(make_shared<Client>(grpc::CreateChannel(M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()),
+                  serverStats));
     uint64_t client_uid = generate_local_uid();
 
     for (int i = 1; i < upperBound; i++) {
         uint64_t query_uid = get_query_uid(client_uid, i);
         serverStats->add_entry(query_uid, get_epoch_time_us());
-        
         float p = uni_dist(generator);
-        if (p < findRequestProportion){
-            // cout << "**FIND**" << i << "\n";
-            cout << client.findLastMessage("admin", query_uid) << endl;  // The actual RPC call!
-        } else{
-            // cout << "->SEND<- " << i << "\n";
-            client.sendMessage("admin", "world " + to_string(i), query_uid);  // The actual RPC call!
-        }
+        
+            if (p < findRequestProportion){
+                // cout << "**FIND**" << i << "\n";
+                // thread t([](uint64_t query_uid, shared_ptr<Client> client){
+                    cout << client.get()->findLastMessage("admin", query_uid) << endl;  // The actual RPC call!
+                // }, query_uid, client);
+                // t.detach();
+            } else{
+                // cout << "->SEND<- " << i << "\n";
+                // thread t([](uint64_t query_uid, shared_ptr<Client> client, int i){
+                    client.get()->sendMessage("admin", "world " + to_string(i), query_uid);  // The actual RPC call!
+                // }, query_uid, client, i);
+                // t.detach();
+            }
+        
         
         this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
     }

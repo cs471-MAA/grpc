@@ -34,7 +34,8 @@ mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::f
         response->set_message("Client ID not found");
     }
     
-    this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
+    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return {};
 }
@@ -47,7 +48,8 @@ Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb
     hashMap->insert(request->client_id(), request->message());
 
 
-    this_thread::sleep_for(normal_distributed_value(meanWaitingTime, stdWaitingTime) * 1us);
+    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return {};
 }
@@ -67,8 +69,11 @@ void RunServer(int workerThreads,
     // Register "service" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *synchronous* service.
     builder.RegisterService(&service);
-    auto r = grpc::ResourceQuota();
-    builder.SetResourceQuota(r.SetMaxThreads(workerThreads));
+    // auto r = grpc::ResourceQuota();
+    // builder.SetResourceQuota(r.SetMaxThreads(workerThreads + 1));
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS, workerThreads);
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS , workerThreads);
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::CQ_TIMEOUT_MSEC, 100000);
 
     // Finally assemble the server.
     std::unique_ptr<Server> server(builder.BuildAndStart());
