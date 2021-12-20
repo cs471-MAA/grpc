@@ -24,7 +24,7 @@ You can check the status of the nodes by running `docker node ls` in the **manag
 ```shell
 git clone https://github.com/cs471-MAA/grpc.git
 cd grpc
-docker stack deploy --compose-file docker-compose.yml grpc
+env `cat .env | grep '^[A-Za-z]'` sudo -E docker stack deploy -c docker-compose.yml grpc
 ```
 
 You can now list the running services with `docker stack services grpc`. You can also see the hostname aliases with:
