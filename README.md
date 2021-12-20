@@ -7,7 +7,7 @@ docker compose up
 
 # Running in a cluster
 
-You will need at least one node that will act as a manager. In that node execute:
+You will need at least one node that will act as a **manager**. In that node execute:
 
 ```shell
 docker swarm init --advertise-addr <ip-addr>
@@ -19,13 +19,19 @@ Choose your `<ip-addr>` using `ifconfig`. You will then get instructions on a co
 docker swarm join --token <token> <ip-addr>:<port>
 ```
 
-You can check the status of the nodes by running `docker node ls` in the **manager** node. After joining all nodes, we can deploy the stack ([official Docker tutorial](https://docs.docker.com/engine/swarm/stack-deploy/)). To do that, copy the toplevel `docker-compose.yml` with a command like `scp` or `git clone` into the **manager** node and execute:
+You can check the status of the nodes by running `docker node ls` in the **manager** node. After joining all nodes, we can deploy the stack ([official Docker tutorial](https://docs.docker.com/engine/swarm/stack-deploy/)). To do that, execute the following in the **manager** node:
 
 ```shell
+git clone https://github.com/cs471-MAA/grpc.git
+cd grpc
 docker stack deploy --compose-file docker-compose.yml grpc
 ```
 
-You can now list the running services with `docker stack services grpc`.
+You can now list the running services with `docker stack services grpc`. You can also see the hostname aliases with:
+
+```shell
+docker service inspect --format='{{json .Spec.TaskTemplate.Networks}}' <service-name>
+```
 
 Finally, to bring the stack down use:
 
