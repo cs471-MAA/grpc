@@ -21,5 +21,8 @@ exp_async:
 exp_sync:
 	docker-compose --env-file .env.custom -f docker-compose-sync.yml up
 
+exp_clean:
+	sudo rm -r container_files/P*
+
 plot:
 	python data_analysis/plot_utils.py
