@@ -19,7 +19,7 @@ Choose your `<ip-addr>` using `ifconfig`. You will then get instructions on a co
 docker swarm join --token <token> <ip-addr>:<port>
 ```
 
-After joining all nodes, we can deploy the stack ([official Docker tutorial](https://docs.docker.com/engine/swarm/stack-deploy/)). To do that, copy the toplevel `docker-compose.yml` with a command like `scp` or `git clone` into the **manager** node and execute:
+You can check the status of the nodes by running `docker node ls` in the **manager** node. After joining all nodes, we can deploy the stack ([official Docker tutorial](https://docs.docker.com/engine/swarm/stack-deploy/)). To do that, copy the toplevel `docker-compose.yml` with a command like `scp` or `git clone` into the **manager** node and execute:
 
 ```shell
 docker stack deploy --compose-file docker-compose.yml grpc
