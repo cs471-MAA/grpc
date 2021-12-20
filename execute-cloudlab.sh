@@ -5,28 +5,41 @@
     exit 1
 }
 
+USERNAME=saheru
+
 source .env
 
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_cloudlab
 
-BENCH_IMAGE_NAME='saheru/grpc-benchmark:latest'
-setup_commands="sudo docker pull $BENCH_IMAGE_NAME"
-setup_commands="${setup_commands} && "
-#setup_commands="${setup_commands} && sudo docker container stop \`sudo docker container ls -aq\`"
-#setup_commands="${setup_commands} && sudo docker container prune -f"
+function node() {
+    echo "node$1.grpc-benchmark.cloudsuite3-pg0.apt.emulab.net"
+}
 
-#while read -r dest ports entrypoint; do
-    #if [ "$ports" = ":" ]; then
-        #docker_command="sudo docker run --rm -v stats_files:/app/stats_files:rw $BENCH_IMAGE_NAME $entrypoint"
-    #else
-        #docker_command="sudo docker run --rm  -v stats_files:/app/stats_files:rw -p $ports $BENCH_IMAGE_NAME $entrypoint"
-    #fi
-    #echo "$dest: running docker command: $docker_command"
-    #ssh -f -p 22 "$dest" "$setup_commands && $docker_command" < /dev/null
-#done <<EOF
-#saheru@apt048.apt.emulab.net 20001:10001 /app/cmake/build/mockDatabaseAsync ${W_MSG} ${t_MSG} ${s_MSG}
-#saheru@apt052.apt.emulab.net 20003:10003 /app/cmake/build/sanitizationServiceAsync ${W_SANIT} ${t_SANIT} ${s_SANIT}
-#saheru@apt049.apt.emulab.net 20002:10002 /app/cmake/build/messageServiceAsync ${W_MSG} ${t_MSG} ${s_MSG}
-#saheru@apt054.apt.emulab.net : /app/cmake/build/clientAsync ${N} ${t_DELAY} ${s_DELAY} ${P} ${SEED}
-#EOF
+# update git
+for nodei in $(seq 0 3); do
+    echo "updating node $nodei git.."
+    node_name="$(node $nodei)"
+    ssh -p 22 $USERNAME@"$node_name" 'git clone https://github.com/cs471-MAA/grpc.git || cd grpc && git pull' </dev/null
+done
+
+# deploy stack (node #3 is the manager)
+ssh -p 22 $USERNAME@"$(node 3)" 'env `cat .env | grep "^[A-Za-z]"` sudo -E docker stack deploy -c docker-compose.yml grpc' </dev/null
+
+# TODO: instead of waiting, client should stop automatically..
+echo 'sleeping for 10s..'
+sleep 10
+
+# stop stack
+ssh -p 22 $USERNAME@"$(node 3)" 'sudo docker stack rm grpc' </dev/null
+
+# retrieve results
+mkdir -p container_files/cluster
+for nodei in $(seq 0 3); do
+    echo "retrieving data from node $nodei .."
+    node_name="$(node $nodei)"
+    scp -r $USERNAME@"$node_name":/users/$USERNAME/grpc/container_files/default/ container_files/cluster
+done
+
+echo 'Done'
+exit 0
