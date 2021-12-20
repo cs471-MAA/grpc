@@ -1,75 +1,93 @@
-//
-// Created by adrien on 18.12.21.
-//
+
 
 #include "mockDatabaseAsync.h"
-#include "../shared/asyncHandler.h"
-#include "asyncSaveMessageHandler.h"
-#include "asyncFindLastMessageHandler.h"
 #include "../shared/consts.h"
+#include <grpcpp/ext/proto_server_reflection_plugin.h>
+#include <grpcpp/resource_quota.h>
+#include <thread>
+#include <utility>
 
+using grpc::ResourceQuota;
 using grpc::ServerBuilder;
+using grpc::Server;
 using namespace std;
 
-ServerAsyncImpl::ServerAsyncImpl(std::uint_fast32_t workerThreads, uint32_t meanWaitingTime, uint32_t stdWaitingTime)
-        : threadPool(workerThreads), meanWaitingTime(meanWaitingTime), stdWaitingTime(stdWaitingTime) {
-    serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR MOCK_DATABASE_ASYNC_FILENAME);
+mockDatabaseImpl::mockDatabaseImpl(uint32_t meanWaitingTime,
+                                  uint32_t stdWaitingTime, std::shared_ptr<CTSL::HashMap<std::string, std::string>> hashMap):
+    meanWaitingTime(meanWaitingTime), 
+    stdWaitingTime(stdWaitingTime),
+    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MOCK_DATABASE_ASYNC_FILENAME)),
+    hashMap(std::move(hashMap)){}
+
+Status
+mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
+                                      ::mmb::findLastMessageReply *response) {
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
+    response->set_query_uid(request->query_uid());
+
+    std::string result;
+    if (hashMap->find(request->client_id(), result)) {
+        response->set_message(result);
+    } else {
+        response->set_message("Client ID not found");
+    }
+    
+    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
+    return {};
 }
 
-ServerAsyncImpl::~ServerAsyncImpl() {
-    server_->Shutdown();
-    // Always shutdown the completion queue after the server.
-    cq_->Shutdown();
+Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
+                                         ::mmb::saveMessageReply *response) {
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
+    response->set_query_uid(request->query_uid());
+    response->set_ok(true);
+    hashMap->insert(request->client_id(), request->message());
+
+
+    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
+    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
+    serverStats->add_entry(request->query_uid(), get_epoch_time_us());
+    return {};
 }
 
-void ServerAsyncImpl::Run() {
+void RunServer(int workerThreads,
+                   uint32_t meanWaitingTime,
+                   uint32_t stdWaitingTime) {
     std::string server_address(M_MOCK_DATABASE_SOCKET_ADDRESS);
+    auto hashMap = std::make_shared<CTSL::HashMap<std::string, std::string>>();
+    mockDatabaseImpl service(meanWaitingTime, stdWaitingTime, hashMap);
 
+    grpc::EnableDefaultHealthCheckService(true);
+    grpc::reflection::InitProtoReflectionServerBuilderPlugin();
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-    // Register "service_" as the instance through which we'll communicate with
-    // clients. In this case it corresponds to an *asynchronous* service.
-    builder.RegisterService(&service_);
-    // Get hold of the completion queue used for the asynchronous communication
-    // with the gRPC runtime.
-    cq_ = builder.AddCompletionQueue();
+    // Register "service" as the instance through which we'll communicate with
+    // clients. In this case it corresponds to an *synchronous* service.
+    builder.RegisterService(&service);
+    // auto r = grpc::ResourceQuota();
+    // builder.SetResourceQuota(r.SetMaxThreads(workerThreads + 1));
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS, workerThreads);
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS , workerThreads);
+    // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::CQ_TIMEOUT_MSEC, 100000);
+
     // Finally assemble the server.
-    server_ = builder.BuildAndStart();
+    std::unique_ptr<Server> server(builder.BuildAndStart());
     std::cout << "Server listening on " << server_address << std::endl;
 
-    // Proceed to the server's main loop.
-    HandleRpcs();
+    // Wait for the server to shutdown. Note that some other thread must be
+    // responsible for shutting down the server for this call to ever return.
+    server->Wait();
 }
-
-void ServerAsyncImpl::HandleRpcs() {
-    // Spawn a new CallData instance to serve new clients.
-    new asyncFindLastMessageHandler(&service_, cq_.get(), threadPool, meanWaitingTime, stdWaitingTime, hashMap, serverStats);
-    new asyncSaveMessageHandler(&service_, cq_.get(), threadPool, meanWaitingTime, stdWaitingTime, hashMap, serverStats);
-    void *tag;  // uniquely identifies a request.
-    bool ok;
-    while (true) {
-        // Block waiting to read the next event from the completion queue. The
-        // event is uniquely identified by its tag, which in this case is the
-        // memory address of a CallData instance.
-        // The return value of Next should always be checked. This return value
-        // tells us whether there is any kind of event or cq_ is shutting down.
-        GPR_ASSERT(cq_->Next(&tag, &ok));
-        GPR_ASSERT(ok);
-        static_cast<asyncHandler *>(tag)->Proceed(ok);
-    }
-}
-
 
 int main(int argc, char **argv) {
-
     int i = 0;
-    unsigned long workerThreads = (argc > ++i) ? stoi(argv[i]) : 2;
+    int workerThreads = (argc > ++i) ? stoi(argv[i]) : 5;
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 3000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
 
-    ServerAsyncImpl server(workerThreads, meanWaitingTime, stdWaitingTime);
-    server.Run();
-
+    RunServer(workerThreads, meanWaitingTime, stdWaitingTime);
     return 0;
 }

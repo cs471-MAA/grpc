@@ -68,9 +68,9 @@ if len(sys.argv) > 1:
 else:
     e = create_entry(P=0.5,
                  W_BACK=64,
-                 W_MID=256,
-                 t_MID=0,
-                 s_MID=0,
+                 W_MID=16,
+                 t_MID=1000,
+                 s_MID=1000,
                 t_FRO=100, 
                 s_FRO=100
                  )
