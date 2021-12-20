@@ -72,7 +72,6 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
     if (status_ == PROCESS) {
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
-        auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
         auto work = fake_worker(meanWaitingTime);
         request_.set_compute(work);
         auto asyncClient = new findLastMessage_asyncClient(channel, cqClient, this);

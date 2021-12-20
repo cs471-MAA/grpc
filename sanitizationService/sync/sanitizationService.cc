@@ -37,8 +37,8 @@ sanitizationServiceImpl::sanitize_message(::grpc::ServerContext *context, const 
     response->set_ok(response2.ok());
     response->set_query_uid(response2.query_uid());
 
-    auto t = normal_distributed_value(meanWaitingTime, stdWaitingTime);
-    this_thread::sleep_for(chrono::microseconds(static_cast<long>((t))));
+    auto work = fake_worker(meanWaitingTime);
+    response->set_compute(work);
 
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return result;
