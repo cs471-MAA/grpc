@@ -157,7 +157,7 @@ def plot_tail_latency(df, ax=None, percs=[90, 99, 99.9], cmap="tab10", cumulativ
     return ax
 
 def compare(adf, sdf, plot, xlim=None):
-    fig, axs = plt.subplots(2,1, figsize=(10, 10))
+    fig, axs = plt.subplots(2,1, figsize=(10,10))
     plot(adf, axs[0])
     axs[0].set_title("Asynchronous")
     plot(sdf, axs[1])
@@ -188,6 +188,7 @@ def main(data_dirpath, async_data=True, verbose=False):
 
     all_async = get_data(data_dirpath, async_data=True, verbose=verbose)
     all_sync = get_data(data_dirpath, async_data=False, verbose=verbose)
+
 
     compare_calls_cascade(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
     compare_tail_latency(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
