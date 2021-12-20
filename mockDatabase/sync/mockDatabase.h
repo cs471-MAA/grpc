@@ -1,9 +1,9 @@
 
 #include <grpcpp/grpcpp.h>
 #include "mock_message_board.grpc.pb.h"
-#include "../shared/Utils.h"
-#include "../shared/ServerStats2.h"
-#include "../shared/HashMap.h"
+#include "../../shared/Utils.h"
+#include "../../shared/ServerStats2.h"
+#include "../../shared/HashMap.h"
 
 using grpc::Status;
 using mmb::mockDatabase;
