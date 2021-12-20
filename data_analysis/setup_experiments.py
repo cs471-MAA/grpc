@@ -1,11 +1,10 @@
 import sys
 import pandas as pd
 # PINNED VALUES
-PINNED_t_BACK=50000
-PINNED_s_BACK=10000
+PINNED_t_BACK=8000
+PINNED_s_BACK=2000
 PINNED_W_BACK=16
 PINNED_SEED=3
-PINNED_N=2500
 
 def generate_parameter_files():
 
@@ -19,7 +18,7 @@ def generate_parameter_files():
     std_delays = [0, 4000, 200000]
 
     df_builder = []
-    
+    N = 2500
     for p in request_proportion:
         P = p
         sP = str(int(p*100))
@@ -37,18 +36,18 @@ def generate_parameter_files():
                         for sd in std_delays:
                             s_DELAY = sd
                             
-                            df_builder.append(create_entry(P, w, t, s, td, sd))
+                            df_builder.append(create_entry(P, w, t, s, td, sd, N))
     df = pd.DataFrame(df_builder)
     print(df)
     return df
 
-def create_entry(P, W_MID, t_MID, s_MID, t_FRO=10000, s_FRO=8000):
+def create_entry(P, W_MID, t_MID, s_MID, t_FRO=10000, s_FRO=8000, N=2500):
 
-    STATSDIR = f"P{int(P*100)}_Wmid{W_MID}_tmid{t_MID}_smid{s_MID}_tfro{t_FRO}_sfro{s_FRO}"
+    STATSDIR = f"P{int(P*100)}_Wmid{W_MID}_tmid{t_MID}_smid{s_MID}_tfro{t_FRO}_sfro{s_FRO}_N{N}"
     return {"STATSDIR": STATSDIR, "P":P, "W_MSG":W_MID,"W_SANIT":W_MID,
                 "t_MSG" :t_MID, "s_MSG" :s_MID, "t_SANIT" :t_MID, "s_SANIT" :s_MID,
                 "t_DELAY" :t_FRO, "s_DELAY" :s_FRO, "W_MOCK": PINNED_W_BACK,
-                "t_MOCK": PINNED_t_BACK, "s_MOCK": PINNED_s_BACK, "SEED": PINNED_SEED, "N": PINNED_N}
+                "t_MOCK": PINNED_t_BACK, "s_MOCK": PINNED_s_BACK, "SEED": PINNED_SEED, "N": N}
     
 def create_env_file(df, index):
     print(df.iloc[index])
@@ -70,12 +69,13 @@ if len(sys.argv) > 1:
     create_env_file(df, int(sys.argv[1]))
 else:
     e = create_entry(P=0.5,
-                 W_MID=32,
-                 t_MID=10000,
-                 s_MID=10000,
-                t_FRO=100, 
-                s_FRO=100
-                 )
+                    W_MID=512,
+                    t_MID=0,
+                    s_MID=0,
+                    t_FRO=100, 
+                    s_FRO=100,
+                    N=2500
+                    )
     create_env_file_from_dict(e)
 
 
