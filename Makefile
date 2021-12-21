@@ -25,4 +25,4 @@ exp_clean:
 	sudo rm -r container_files/P*
 
 plot:
-	python data_analysis/plot_utils.py
+	python data_analysis/plot_utils.py container_files/default

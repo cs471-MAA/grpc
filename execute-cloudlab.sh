@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$1" = "-h" ] || [ "$1" = "-?" ] || [ "$1" = "--help" ] ; then
+if [ $# -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "-?" ] || [ "$1" = "--help" ] ; then
      cat <<__EOT__
 
      Usage: $(basename "$0") <SYNC | ASYNC> <.env file>
