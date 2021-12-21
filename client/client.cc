@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
     uniform_real_distribution<float> uni_dist(0.f, 1.f);
     if (argc > ++i)
         generator.seed(stoi(argv[i]));
-    
+
 
     // Instantiate the client. It requires a channel, out of which the actual RPCs
     // are created. This channel models a connection to an endpoint (in this case,
@@ -108,11 +108,11 @@ int main(int argc, char **argv) {
     // only calls findmessage atm
     std::thread thread_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
     std::thread thread2_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
-    
+
     for (int i = 1; i < upperBound; i++) {
         uint64_t query_uid = get_query_uid(client_uid, i);
         serverStats->add_entry(query_uid, get_epoch_time_us());
-        
+
         float p = uni_dist(generator);
         if (p < findRequestProportion){
             // cout << "**FIND**" << i << "\n";
@@ -121,9 +121,9 @@ int main(int argc, char **argv) {
             // cout << "->SEND<- " << i << "\n";
             client.sendMessage("admin", "world " + to_string(i), query_uid);  // The actual RPC call!
         }
-        
+
         this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
-    }   
+    }
 
     std::cout << "Press control-c to quit" << std::endl << std::endl;
     thread_.join();  // blocks forever

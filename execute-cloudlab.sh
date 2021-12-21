@@ -69,9 +69,13 @@ deploy_pre_commands='cd grpc'
 deploy_post_commands='sleep 1 && sudo docker node ls && sudo docker service ls'
 ssh -p 22 $USERNAME@"$(node 3)" "$deploy_pre_commands"' && env '"$ENV_VARS"' sudo -E docker stack deploy -c '"$DOCKER_COMPOSE"' grpc && '"$deploy_post_commands" </dev/null
 
+# follow client log output
+ssh -f -p 22 $USERNAME@"$(node 3)" 'sudo docker service logs -f -n 5 -t --no-trunc grpc_client' </dev/null
+
 # TODO: instead of waiting, client should stop automatically..
-echo 'sleeping for 10s..'
-sleep 10
+echo 'PRESS ENTER TO TERMINATE EXECUTION'
+read -r
+echo 'TERMINATING EXECUTION ..'
 
 # stop stack
 ssh -p 22 $USERNAME@"$(node 3)" 'sudo docker stack rm grpc' </dev/null
