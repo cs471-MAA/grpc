@@ -3,7 +3,7 @@
 if [ "$1" = "-h" ] || [ "$1" = "-?" ] || [ "$1" = "--help" ] ; then
      cat <<__EOT__
 
-     Usage: $(basename "$0") <SYNC | ASYNC>
+     Usage: $(basename "$0") <SYNC | ASYNC> <.env file>
 
 __EOT__
     exit 1
@@ -17,10 +17,20 @@ fi
 
 USERNAME=saheru
 SYNC="$1"  # 1 means SYNC, 0 means ASYNC
+ENV_FILE="$2"
 
 [ -z "$SYNC" ] && {
-    echo 'you did not provide SYNC / ASYNC as the 1st argument. Defaulting to ASYNC' >&1
+    echo 'you did not provide SYNC / ASYNC as the 1st argument. Defaulting to ASYNC' >&2
     SYNC=0
+}
+[ -z "$ENV_FILE" ] && {
+    echo 'you did not provide the .env file as the 2nd argument. Defaulting to .env.custom' >&2
+    ENV_FILE='.env.custom'
+}
+
+[ ! -f "$ENV_FILE" ] && {
+    echo "$ENV_FILE does not exist" >&2
+    exit 1
 }
 
 [ "$SYNC" = "SYNC" ] && SYNC=1 || SYNC=0
@@ -28,10 +38,10 @@ SYNC="$1"  # 1 means SYNC, 0 means ASYNC
 [ $SYNC -eq 1 ] && echo 'running SYNC'
 [ $SYNC -eq 0 ] && echo 'running ASYNC'
 
-[ $SYNC -eq 1 ] && DOCKER_COMPOSE='docker-compose-sync.yml'
-[ $SYNC -eq 0 ] && DOCKER_COMPOSE='docker-compose.yml'
+[ $SYNC -eq 1 ] && DOCKER_COMPOSE='docker-compose-swarm-sync.yml'
+[ $SYNC -eq 0 ] && DOCKER_COMPOSE='docker-compose-swarm-async.yml'
 
-source .env.custom
+source "$ENV_FILE"
 OUT_DIR="/users/$USERNAME/grpc/container_files/$STATSDIR"
 
 eval "$(ssh-agent -s)"
@@ -54,7 +64,7 @@ for nodei in $(seq 0 3); do
 done
 
 # deploy stack (node #3 is the manager)
-ENV_VARS="$(grep "^[A-Za-z]" .env.custom | tr "\n" " ")"
+ENV_VARS="$(grep "^[A-Za-z]" "$ENV_FILE" | tr "\n" " ")"
 deploy_pre_commands='cd grpc'
 deploy_post_commands='sleep 1 && sudo docker node ls && sudo docker service ls'
 ssh -p 22 $USERNAME@"$(node 3)" "$deploy_pre_commands"' && env '"$ENV_VARS"' sudo -E docker stack deploy -c '"$DOCKER_COMPOSE"' grpc && '"$deploy_post_commands" </dev/null
@@ -67,7 +77,8 @@ sleep 10
 ssh -p 22 $USERNAME@"$(node 3)" 'sudo docker stack rm grpc' </dev/null
 
 # retrieve results
-mkdir -p container_files/cluster
+mkdir -p container_files/cluster/"$STATSDIR"
+cp "$ENV_FILE" container_files/cluster/"$STATSDIR"
 for nodei in $(seq 0 3); do
     echo "retrieving data from node $nodei .."
     node_name="$(node $nodei)"

@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+    mock-database:
+        image: saheru/grpc-benchmark
+        hostname: mock-database
+        ports:
+            - 20001:10001
+        entrypoint:
+            ["/app/cmake/build/mockDatabaseAsync", "${W_MOCK}", "${t_MOCK}", "${s_MOCK}"]
+        volumes:
+          - ./container_files/${STATSDIR}/:/app/stats_files:rw
+        stop_signal: SIGINT
+
+    sanitization-service:
+        image: saheru/grpc-benchmark
+        hostname: sanitization-service
+        ports:
+            - 20003:10003
+        entrypoint:
+            ["/app/cmake/build/sanitizationServiceAsync", "${W_SANIT}", "${t_SANIT}", "${s_SANIT}"]
+        depends_on:
+            - mock-database
+        volumes:
+          - ./container_files/${STATSDIR}/:/app/stats_files:rw
+        stop_signal: SIGINT
+
+    message-service:
+        image: saheru/grpc-benchmark
+        hostname: message-service
+        ports:
+            - 20002:10002
+        entrypoint:
+            ["/app/cmake/build/messageServiceAsync", "${W_MSG}", "${t_MSG}", "${s_MSG}"]
+        depends_on:
+            - mock-database
+            - sanitization-service
+        volumes:
+          - ./container_files/${STATSDIR}/:/app/stats_files:rw
+        stop_signal: SIGINT
+
+    client:
+        image: saheru/grpc-benchmark
+        hostname: client
+        # restart: always
+        entrypoint:
+            ["/app/cmake/build/clientAsync", "${N}", "${t_DELAY}", "${s_DELAY}", "${P}", "${SEED}"]
+        depends_on:
+            - message-service
+        volumes:
+          - ./container_files/${STATSDIR}/:/app/stats_files:rw
+        stop_signal: SIGINT
