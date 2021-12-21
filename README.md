@@ -24,10 +24,12 @@ You can check the status of the nodes by running `docker node ls` in the **manag
 ```shell
 git clone https://github.com/cs471-MAA/grpc.git
 cd grpc
-env `cat .env | grep '^[A-Za-z]'` sudo -E docker stack deploy -c docker-compose.yml grpc
+env `grep '^[A-Za-z]' .env` sudo -E docker stack deploy -c docker-compose-swarm-async.yml grpc
 ```
 
-You can now list the running services with `docker stack services grpc`. You can also see the hostname aliases with:
+> NOTE: if you get errors, you probably need to run `git clone https://github.com/cs471-MAA/grpc.git` on all the nodes being used.
+
+You can now list the running services with `docker stack services grpc`. You can also see the hostnames assigned by Docker with:
 
 ```shell
 docker service inspect --format='{{json .Spec.TaskTemplate.ContainerSpec.Hostname}}' <service-name>
