@@ -246,8 +246,9 @@ def main(data_dirpath, async_data=True, verbose=False):
 
     # compare_calls_cascade(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
     # compare_tail_latency(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
-    compare_calls_cascade(all_async, all_sync)
+
     compare_tail_latency(all_async, all_sync)
+    compare_calls_cascade(all_async, all_sync)
 
 
 if __name__ == "__main__":
