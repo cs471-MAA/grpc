@@ -42,6 +42,9 @@ def find_element(x, i):
 
 def treat_data(filepath, time_start=None, time_factor=1000.0, verbose=False):
     df = pd.read_csv(filepath, names=DF_NAMES, dtype=DF_TYPES)
+    print(df)
+    # drop invalid queries
+    df = df.loc[df["query_uid"] > 0]
     return_time_start = False
     if time_start is None:
         return_time_start = True
@@ -58,6 +61,9 @@ def treat_data(filepath, time_start=None, time_factor=1000.0, verbose=False):
     df.columns = df.columns.set_levels(['start', 'end'], level=1)
     df.columns = df.columns.get_level_values(1)
     df = df.reset_index()
+
+    # NaN values indicate no response
+    # df.loc[df["end"].isnull().values, "end"] = np.inf
 
     # print([df["start"] > df["end"]])
     if return_time_start:
@@ -78,6 +84,11 @@ def get_actors_df(dirpath, async_data=True, time_factor=1000.0):
         msgserv_df = treat_data(dirpath + SYNC_MSGSERV_FN, time_start, time_factor=time_factor)
         sanitserv_df = treat_data(dirpath + SYNC_SANITSERV_FN, time_start, time_factor=time_factor)
         mockdata_df = treat_data(dirpath + SYNC_MOCKDATA_FN, time_start, time_factor=time_factor)
+        # print(client_df)
+        # print(msgserv_df)
+        # print(sanitserv_df)
+        # print(mockdata_df)
+        # exit()
 
     return client_df, msgserv_df, sanitserv_df, mockdata_df
 
@@ -93,15 +104,26 @@ def get_data(dirpath, async_data=True, time_factor=1000.0, as_dict=True, verbose
                "start_client", "start_msg", "start_sanit", "start_mock",
                "end_mock", "end_sanit", "end_msg", "end_client"]]
     all["latency"] = all["end_client"] - all["start_client"]
-    all = all.groupby("client_uid")
 
     if as_dict:
+        all = all.groupby("client_uid")
         return {client_uid: df.drop("client_uid", axis=1) for client_uid, df in all}
     else:
         return all
 
 
 def plot_trace(X1, X2, Y, color, label, w, ax):
+    if type(X1) == pd.Series:
+        X1 = X1.to_numpy()
+        X2 = X2.to_numpy()
+    # fix nan values
+    idx = ~np.isnan(X1)
+    X1 = X1[idx]
+    X2 = X2[idx]
+    Y = Y[idx]
+    idx = np.isnan(X2)
+    X2[idx] = X2[~idx].max()
+
     U = X2 - X1
     V = Y - Y
     ax.quiver(X1, Y, U, V,
@@ -115,7 +137,7 @@ def new_default_figure():
     plt.figure(figsize=(10, 10), dpi=80)
 
 
-def plot_calls_cascade(df, ax=None, verbose=False):
+def plot_calls_cascade(df, ax=None, verbose=False, cmap='tab10', plot_legend=True):
     # if df.end_client.isnull().values.any():
     #     continue
     if ax is None:
@@ -127,10 +149,12 @@ def plot_calls_cascade(df, ax=None, verbose=False):
 
     w = 0.95  # df.end_client.max() / 100
 
-    plot_trace(df.start_client, df.end_client, df.query_index, color="#145ac9", label="Client", w=w*0.99, ax=ax)
-    plot_trace(df.start_msg, df.end_msg, df.query_index, color="#139415", label="Message Service", w=w*0.75, ax=ax)
-    plot_trace(df.start_sanit, df.end_sanit, df.query_index, color="#bdb21c", label="Sanitize Service", w=w*0.5, ax=ax)
-    plot_trace(df.start_mock, df.end_mock, df.query_index, color="#a12810", label="Mock database", w=w*0.25, ax=ax)
+    cmap = plt.cm.get_cmap(cmap)
+
+    plot_trace(df["start_client"], df["end_client"], df["query_index"], color=cmap(0), label="Client", w=w*0.99, ax=ax)
+    plot_trace(df["start_msg"], df["end_msg"], df["query_index"], color=cmap(1), label="Message Service", w=w*0.75, ax=ax)
+    plot_trace(df["start_sanit"], df["end_sanit"], df["query_index"], color=cmap(2), label="Sanitize Service", w=w*0.5, ax=ax)
+    plot_trace(df["start_mock"], df["end_mock"], df["query_index"], color=cmap(3), label="Mock database", w=w*0.25, ax=ax)
 
     if verbose:
         print(f'{w=}')
@@ -140,15 +164,14 @@ def plot_calls_cascade(df, ax=None, verbose=False):
         print(f'{df.start_sanit[0]=} | {df.end_sanit[0]=} ||')
         print(f'{df.start_mock[0]=} | {df.end_mock[0]=}')
 
-    plt.ylabel("query ID")
-    plt.xlabel("time [ms]")
-    plt.xlim(-df.end_client.max()*0.01, df.end_client.max()*1.01)
-    plt.legend()
+    ax.set_ylabel("query ID")
+    # ax.set_xlim(-df.end_client.max()*0.01, df.end_client.max()*1.01)
+    if plot_legend:
+        ax.legend()
     return ax
 
 
-def plot_tail_latency(df, ax=None, percs=[90, 99, 99.9], cmap="tab10", cumulative=True, density=True, alpha=1.0):
-
+def plot_tail_latency(df, ax=None, percs=[90, 99, 99.9], cmap="tab10", cumulative=True, density=True, alpha=1.0, plot_legend=True):
     data = df["latency"].values
     if ax is None:
         ax = plt.axes()
@@ -166,29 +189,32 @@ def plot_tail_latency(df, ax=None, percs=[90, 99, 99.9], cmap="tab10", cumulativ
         rgba = (rgba[0], rgba[1], rgba[2], alpha)
         patch.set_facecolor(rgba)
 
-    legend_elements = []
-    percs = percs.copy()
-    percs.insert(0, 0)
-    for i, p in enumerate(percs):
-        legend_elements.append(mpl.patches.Patch(facecolor=colormap(i),
-                                                 label='Above ' + str(p) + "th percentile"))
+    if plot_legend:
+        legend_elements = []
+        percs = percs.copy()
+        percs.insert(0, 0)
+        for i, p in enumerate(percs):
+            legend_elements.append(mpl.patches.Patch(facecolor=colormap(i),
+                                                     label='Above ' + str(p) + "th percentile"))
 
-    ax.legend(handles=legend_elements, loc='best')
+        ax.legend(handles=legend_elements, loc='best')
 
     return ax
 
 
 def compare(adf, sdf, plot, xlim=None):
-    fig, axs = plt.subplots(2, 1, figsize=(10, 10))
-    plot(adf, axs[0])
+    fig, axs = plt.subplots(2, 1, figsize=(10, 10), sharex='col', sharey='col')
+    plot(adf, axs[0], plot_legend=True)
     axs[0].set_title("Asynchronous")
-    plot(sdf, axs[1])
+    plot(sdf, axs[1], plot_legend=False)
     axs[1].set_title("Synchronous")
+    axs[1].set_xlabel("time [ms]")
     for ax in axs:
-        if xlim is None:
-            ax.set_xlim(left=min(adf.latency.min(), sdf.latency.min()),
-                        right=max(adf.latency.max(), sdf.latency.max()))
-        else:
+        # if xlim is None:
+            # ax.set_xlim(left=min(adf.latency.min(), sdf.latency.min()),
+                        # right=max(adf.latency.max(), sdf.latency.max()))
+        # else:
+        if xlim is not None:
             ax.set_xlim(xlim)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
@@ -197,9 +223,9 @@ def compare(adf, sdf, plot, xlim=None):
     return axs
 
 
-def plot_tail_latency_advanced(df, ax):
-    plot_tail_latency(df, cumulative=False, alpha=0.9, ax=ax)
-    plot_tail_latency(df, cumulative=True, alpha=0.25, ax=ax)
+def plot_tail_latency_advanced(df, ax, plot_legend=False):
+    plot_tail_latency(df, cumulative=False, alpha=0.9, ax=ax, plot_legend=plot_legend)
+    plot_tail_latency(df, cumulative=True, alpha=0.25, ax=ax, plot_legend=plot_legend)
 
 
 def compare_tail_latency(adf, sdf):
@@ -207,15 +233,21 @@ def compare_tail_latency(adf, sdf):
 
 
 def compare_calls_cascade(adf, sdf):
-    return compare(adf, sdf, plot_calls_cascade, xlim=(0, max(adf.end_client.max(), sdf.end_client.max())))
+    # return compare(adf, sdf, plot_calls_cascade, xlim=(0, max(adf.end_client.max(), sdf.end_client.max())))
+    return compare(adf, sdf, plot_calls_cascade)
 
 
 def main(data_dirpath, async_data=True, verbose=False):
-    all_async = get_data(data_dirpath, async_data=True, verbose=verbose)
-    all_sync = get_data(data_dirpath, async_data=False, verbose=verbose)
+    all_async = get_data(data_dirpath, async_data=True, as_dict=False, verbose=verbose)
+    all_sync = get_data(data_dirpath, async_data=False, as_dict=False, verbose=verbose)
+    print(all_sync)
+    # print({k: v.loc[~v["latency"].isnull().values] for k, v in all_sync.items()})
+    print(all_sync.loc[~all_sync["latency"].isnull().values])
 
-    compare_calls_cascade(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
-    compare_tail_latency(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
+    # compare_calls_cascade(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
+    # compare_tail_latency(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
+    compare_calls_cascade(all_async, all_sync)
+    compare_tail_latency(all_async, all_sync)
 
 
 if __name__ == "__main__":
@@ -224,4 +256,3 @@ if __name__ == "__main__":
     main(args.data_dir, async_data=True, verbose=True)
 
     plt.show()
-

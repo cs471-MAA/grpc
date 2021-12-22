@@ -3,8 +3,10 @@
 if [ $# -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "-?" ] || [ "$1" = "--help" ] ; then
      cat <<__EOT__
 
-     Usage: $(basename "$0") <SYNC | ASYNC> <.env file>
+     Usage: $(basename "$0") <SYNC | ASYNC> <.env file> [just retrieve results?]
 
+    Example to just retrieve results:
+        $(basename "$0") ASYNC .env.custom --only-results
 __EOT__
     exit 1
 fi
@@ -42,7 +44,7 @@ ENV_FILE="$2"
 [ $SYNC -eq 0 ] && DOCKER_COMPOSE='docker-compose-swarm-async.yml'
 
 source "$ENV_FILE"
-OUT_DIR="/users/$USERNAME/grpc/container_files/$STATSDIR"
+OUT_DIR="$(realpath -m /users/$USERNAME/grpc/container_files/"$STATSDIR")"
 
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_cloudlab
@@ -51,15 +53,35 @@ function node() {
     echo "node$1.grpc-benchmark.cloudsuite3-pg0.apt.emulab.net"
 }
 
+function retrieve_results() {
+    # retrieve results
+    #rm -rf container_files/cluster/"$STATSDIR"
+    mkdir -p container_files/cluster/"$STATSDIR"
+    cp "$ENV_FILE" container_files/cluster/"$STATSDIR"
+    for nodei in $(seq 0 3); do
+        echo "retrieving data from node $nodei .."
+        node_name="$(node $nodei)"
+        scp -r $USERNAME@"$node_name":"$OUT_DIR" container_files/cluster/
+    done
+}
+
+[ -n "$3" ] && {
+    echo 'just retrieving results..'
+    retrieve_results
+    exit 0
+}
+
 # update git
 for nodei in $(seq 0 3); do
     echo "updating node $nodei git.."
     node_name="$(node $nodei)"
+    [ $SYNC -eq 1 ] && rm_command='find '"$OUT_DIR"' -maxdepth 1 ! -name '\''*Async.csv'\'' -exec rm -rf {} +'
+    [ $SYNC -eq 0 ] && rm_command='rm -rf '"$OUT_DIR"'/*Async.csv'
     git_commands='\
     git config --global credential.helper store && \
     git clone https://github.com/cs471-MAA/grpc.git || cd grpc && git pull; \
     sudo docker pull saheru/grpc-benchmark; \
-    mkdir -p '"$OUT_DIR"
+    '"$rm_command"'; mkdir -p '"$OUT_DIR"
     ssh -p 22 $USERNAME@"$node_name" "$git_commands"
 done
 
@@ -78,16 +100,9 @@ read -r
 echo 'TERMINATING EXECUTION ..'
 
 # stop stack
-ssh -p 22 $USERNAME@"$(node 3)" 'sudo docker stack rm grpc' </dev/null
+ssh -p 22 $USERNAME@"$(node 3)" 'sudo docker stack rm grpc; sudo pkill -f ".*docker service logs.*"' </dev/null
 
-# retrieve results
-mkdir -p container_files/cluster/"$STATSDIR"
-cp "$ENV_FILE" container_files/cluster/"$STATSDIR"
-for nodei in $(seq 0 3); do
-    echo "retrieving data from node $nodei .."
-    node_name="$(node $nodei)"
-    scp -r $USERNAME@"$node_name":"$OUT_DIR" container_files/cluster/
-done
+retrieve_results
 
 echo 'DONE'
 exit 0

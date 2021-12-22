@@ -16,7 +16,7 @@ using namespace std;
 
 mockDatabaseImpl::mockDatabaseImpl(uint32_t meanWaitingTime,
                                   uint32_t stdWaitingTime, std::shared_ptr<CTSL::HashMap<std::string, std::string>> hashMap):
-    meanWaitingTime(meanWaitingTime), 
+    meanWaitingTime(meanWaitingTime),
     stdWaitingTime(stdWaitingTime),
     serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MOCK_DATABASE_SYNC_FILENAME)),
     hashMap(std::move(hashMap)){}
@@ -24,6 +24,7 @@ mockDatabaseImpl::mockDatabaseImpl(uint32_t meanWaitingTime,
 Status
 mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
                                       ::mmb::findLastMessageReply *response) {
+    std::cout << "query_uid: " << request->query_uid() << std::endl;
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     response->set_query_uid(request->query_uid());
 
@@ -36,12 +37,14 @@ mockDatabaseImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::f
 
     auto work = fake_worker(meanWaitingTime);
     response->set_compute(work);
+    std::cout << "finish query_uid: " << request->query_uid() << std::endl;
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return {};
 }
 
 Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
                                          ::mmb::saveMessageReply *response) {
+    std::cout << "query_uid: " << request->query_uid() << std::endl;
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     response->set_query_uid(request->query_uid());
     response->set_ok(true);
@@ -50,6 +53,7 @@ Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb
 
     auto work = fake_worker(meanWaitingTime);
     response->set_compute(work);
+    std::cout << "finish query_uid: " << request->query_uid() << std::endl;
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return {};
 }

@@ -37,7 +37,7 @@ void findLastMessage_asyncClient::findLastMessage(findLastMessageRequest &reques
 void findLastMessage_asyncClient::Proceed(bool ok) {
     // Act upon the status of the actual RPC.
     if (status.ok()) {
-        //std::cout << bidule << std::endl;
+        //std::cout << "bidule" << std::endl;
         callData_->Finish(reply);
     } else {
         //std::cout << "ass RPC failed" << std::endl;
@@ -69,7 +69,9 @@ asyncFindLastMessageHandler::asyncFindLastMessageHandler(messageService::AsyncSe
 }
 
 void asyncFindLastMessageHandler::Proceed(bool ok) {
+    std::cout << "received call" << std::endl;
     if (status_ == PROCESS) {
+        std::cout << "query_uid: " << request_.query_uid() << std::endl;
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
         auto work = fake_worker(meanWaitingTime);
@@ -77,12 +79,12 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
         auto asyncClient = new findLastMessage_asyncClient(channel, cqClient, this);
         asyncClient->findLastMessage(request_);
 
-        
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
         new asyncFindLastMessageHandler(service_, cq_, channel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
     } else {
+        std::cout << "finishing.." << std::endl;
         GPR_ASSERT(status_ == FINISH);
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
         // Once in the FINISH state, deallocate ourselves (CallData).

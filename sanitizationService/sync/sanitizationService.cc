@@ -17,9 +17,9 @@ using mmb::saveMessageReply;
 
 sanitizationServiceImpl::sanitizationServiceImpl(uint32_t meanWaitingTime,
                                                  uint32_t stdWaitingTime):
-    meanWaitingTime(meanWaitingTime), 
+    meanWaitingTime(meanWaitingTime),
     stdWaitingTime(stdWaitingTime),
-    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR SANITIZATION_SERVICE_SYNC_FILENAME)) 
+    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR SANITIZATION_SERVICE_SYNC_FILENAME))
 {
     mockDatabaseStub_ = mmb::mockDatabase::NewStub(grpc::CreateChannel(M_MOCK_DATABASE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
 }
@@ -29,6 +29,7 @@ sanitizationServiceImpl::sanitize_message(::grpc::ServerContext *context, const 
                                           ::mmb::saveMessageReply *response) {
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
+    std::cout << "query_uid: " << request->query_uid() << std::endl;
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     grpc::ClientContext clientContext;
 
@@ -40,6 +41,7 @@ sanitizationServiceImpl::sanitize_message(::grpc::ServerContext *context, const 
     auto work = fake_worker(meanWaitingTime);
     response->set_compute(work);
 
+    std::cout << "finished query_uid: " << request->query_uid() << std::endl;
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return result;
 }

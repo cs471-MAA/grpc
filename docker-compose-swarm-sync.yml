@@ -1,7 +1,7 @@
 version: "3.9"
 services:
     mock-database:
-        image: saheru/grpc-benchmark
+        image: saheru/grpc-benchmark:latest
         hostname: mock-database
         ports:
             - 20011:10011
@@ -12,7 +12,7 @@ services:
         stop_signal: SIGINT
 
     sanitization-service:
-        image: saheru/grpc-benchmark
+        image: saheru/grpc-benchmark:latest
         hostname: sanitization-service
         ports:
             - 20013:10013
@@ -25,7 +25,7 @@ services:
         stop_signal: SIGINT
 
     message-service:
-        image: saheru/grpc-benchmark
+        image: saheru/grpc-benchmark:latest
         hostname: message-service
         ports:
             - 20012:10012
@@ -39,7 +39,7 @@ services:
         stop_signal: SIGINT
 
     client:
-        image: saheru/grpc-benchmark
+        image: saheru/grpc-benchmark:latest
         hostname: client
         # restart: always
         entrypoint:
