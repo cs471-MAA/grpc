@@ -119,6 +119,9 @@ def plot_trace(X1, X2, Y, color, label, w, ax):
     idx = np.isnan(X2)
     X2[idx] = X2[~idx].max()
 
+    # print(f'{np.sort(X2)[:100]=}')
+    # exit()
+
     U = X2 - X1
     V = Y - Y
     ax.quiver(X1, Y, U, V,
@@ -126,6 +129,7 @@ def plot_trace(X1, X2, Y, color, label, w, ax):
               units="y", width=w,
               # remove arrow head
               headaxislength=0, headlength=0, headwidth=1)
+    ax.set_xlim(None, 400000)
 
 
 def new_default_figure():
@@ -236,7 +240,9 @@ def main(data_dirpath, async_data=True, verbose=False):
     all_async = get_data(data_dirpath, async_data=True, as_dict=False, verbose=verbose)
     all_sync = get_data(data_dirpath, async_data=False, as_dict=False, verbose=verbose)
     # print(all_sync)
-    # print(all_sync.loc[~all_sync["latency"].isnull().values])
+    # print(all_sync["latency"].argmax())
+    # print(all_sync.loc[all_sync["latency"].argmax()])
+    # exit()
 
     # compare_calls_cascade(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
     # compare_tail_latency(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
