@@ -58,7 +58,7 @@ void ServerStats2::dump_server_stats(bool overwrite) {
     file.open(filepath, overwrite ? std::ofstream::trunc : std::ofstream::app);
     for (auto &it: hashMap) {
         for (auto &elem: it.second) {
-            file << std::get<0>(elem) << "," << std::get<1>(elem) << std::endl;
+            file << std::get<0>(elem) << "," << std::get<1>(elem) << "\n";
         }
         it.second.clear();
     }

@@ -63,9 +63,9 @@ private:
 
         void Proceed(bool ok) override {
             if (ok) {
-                std::cout << "findMessage: " << reply.message() << std::endl;
+                std::cout << "findMessage: " << reply.message() << "\n";
             } else {
-                std::cout << "findMessage Error: " << status.error_details() << std::endl;
+                std::cout << "findMessage Error: " << status.error_details() << endl;
             }
             serverStats->add_entry(reply.query_uid(), get_epoch_time_us());
 

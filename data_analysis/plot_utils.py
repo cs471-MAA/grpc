@@ -1,3 +1,4 @@
+#! /bin/env python3
 from datetime import time
 import matplotlib as mpl
 import matplotlib.pyplot as plt
