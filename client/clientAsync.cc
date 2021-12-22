@@ -134,8 +134,7 @@ int main(int argc, char **argv) {
             // cout << "->SEND<- " << i << "\n";
             client.sendMessage("admin", "world " + to_string(i), query_uid);  // The actual RPC call!
         }
-
-        this_thread::sleep_for(std::chrono::microseconds(static_cast<long>((normal_dist(generator)))));
+        fake_worker(normal_dist(generator));
     }
 
     std::cout << "Press control-c to quit" << std::endl << std::endl;
