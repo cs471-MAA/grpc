@@ -43,7 +43,7 @@ services:
         hostname: client
         # restart: always
         entrypoint:
-            ["/app/cmake/build/clientAsync", "${N}", "${t_DELAY}", "${s_DELAY}", "${P}", "${SEED}"]
+            ["/app/cmake/build/clientAsync", "0", "${N}", "${t_DELAY}", "${s_DELAY}", "${P}", "${SEED}"]
         depends_on:
             - message-service
         volumes:
