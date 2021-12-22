@@ -6,7 +6,7 @@ services:
         ports:
             - 20011:10011
         entrypoint:
-            ["/app/cmake/build/mockDatabase", "${W_MOCK}", "${t_MOCK}", "${s_MOCK}"]
+            ["/app/cmake/build/mockDatabase", "1", "${W_MOCK}", "${t_MOCK}", "${s_MOCK}"]
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
