@@ -4,7 +4,7 @@ services:
         image: saheru/grpc-benchmark:latest
         hostname: mock-database
         ports:
-            - 20011:10011
+            - "20011:20011"
         entrypoint:
             ["/app/cmake/build/mockDatabase", "1", "${W_MOCK}", "${t_MOCK}", "${s_MOCK}"]
         volumes:
@@ -15,7 +15,7 @@ services:
         image: saheru/grpc-benchmark:latest
         hostname: sanitization-service
         ports:
-            - 20013:10013
+            - "20013:20013"
         entrypoint:
             ["/app/cmake/build/sanitizationService", "${W_SANIT}", "${t_SANIT}", "${s_SANIT}"]
         depends_on:
@@ -28,7 +28,7 @@ services:
         image: saheru/grpc-benchmark:latest
         hostname: message-service
         ports:
-            - 20012:10012
+            - "20012:20012"
         entrypoint:
             ["/app/cmake/build/messageService", "${W_MSG}", "${t_MSG}", "${s_MSG}"]
         depends_on:
