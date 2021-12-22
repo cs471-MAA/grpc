@@ -4,12 +4,6 @@
 #include <string>
 #include <random>
 
-#if VERBOSE
-#define PRINT(string) std::cout << string
-#else
-#define PRINT(string)
-#endif
-
 using namespace std;
 
 uint64_t get_epoch_time_us();

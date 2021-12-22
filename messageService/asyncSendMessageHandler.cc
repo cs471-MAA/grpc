@@ -55,7 +55,7 @@ asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *s
                                                  std::shared_ptr<grpc::ChannelInterface> channel,
                                                  grpc::CompletionQueue *cqClient,
                                                  uint32_t meanWaitingTime,
-                                                 uint32_t stdWaitingTime,
+                                                 uint32_t stdWaitingTime,       
                                                  std::shared_ptr<ServerStats2> serverStats)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
           channel(std::move(channel)), meanWaitingTime(meanWaitingTime),
@@ -70,9 +70,7 @@ asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *s
 }
 
 void asyncSendMessageHandler::Proceed(bool ok) {
-    PRINT("received call" << '\n');
     if (status_ == PROCESS) {
-        PRINT("query_uid: " << request_.query_uid() << '\n');
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
 
@@ -87,7 +85,6 @@ void asyncSendMessageHandler::Proceed(bool ok) {
         // part of its FINISH state.
         new asyncSendMessageHandler(service_, cq_, channel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
     } else {
-        PRINT("finishing.." << '\n');
         GPR_ASSERT(status_ == FINISH);
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
         // Once in the FINISH state, deallocate ourselves (CallData).
