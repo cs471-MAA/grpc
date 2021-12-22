@@ -11,7 +11,8 @@ using mmb::mockDatabase;
 // Logic and data behind the server's behavior.
 class mockDatabaseImpl final : public mockDatabase::Service {
 public:
-    mockDatabaseImpl(uint32_t meanWaitingTime, uint32_t stdWaitingTime, std::shared_ptr<CTSL::HashMap<std::string, std::string>>);
+    mockDatabaseImpl(uint32_t meanWaitingTime, uint32_t stdWaitingTime,
+                     std::shared_ptr<CTSL::HashMap<std::string, std::string>>, const std::string& log_path);
 
     ~mockDatabaseImpl() override = default;
 

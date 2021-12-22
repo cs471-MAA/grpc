@@ -44,7 +44,7 @@ void sanitizationServiceAsyncImpl::Run(unsigned long workerThreads) {
 }
 
 void sanitizationServiceAsyncImpl::HandleRpcs(ServerCompletionQueue *cq) {
-    std::shared_ptr<grpc::Channel> DBchannel = grpc::CreateChannel(M_MOCK_DATABASE_SOCKET_ADDRESS,
+    std::shared_ptr<grpc::Channel> DBchannel = grpc::CreateChannel(M_MOCK_DATABASE_SYNC_SOCKET_ADDRESS,
                                                                    grpc::InsecureChannelCredentials());
 
     auto cqClient = new grpc::CompletionQueue();

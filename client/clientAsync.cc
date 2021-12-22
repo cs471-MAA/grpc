@@ -83,6 +83,7 @@ void clientAsync::AsyncCompleteRpc() {
 int main(int argc, char **argv) {
 
     int i = 0;
+    uint32_t sync = ((argc > ++i) ? stoi(argv[i]) : -1);
     uint32_t upperBound = ((argc > ++i) ? stoi(argv[i]) : 256);
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 500);
@@ -99,8 +100,20 @@ int main(int argc, char **argv) {
     // are created. This channel models a connection to an endpoint (in this case,
     // localhost at port 50051). We indicate that the channel isn't authenticated
     // (use of InsecureChannelCredentials()).
-    std::shared_ptr<ServerStats2> serverStats = std::make_shared<ServerStats2>(STATS_FILES_DIR CLIENT_ASYNC_FILENAME);
-    clientAsync client(grpc::CreateChannel(M_MESSAGE_SERVICE_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()),
+    std::string stats_path;
+    std::string MS_socket_address;
+    if (sync == 0){
+        stats_path = STATS_FILES_DIR CLIENT_ASYNC_FILENAME;
+        MS_socket_address = M_MESSAGE_SERVICE_SOCKET_ADDRESS;
+    }else if(sync == 1){
+        stats_path = STATS_FILES_DIR CLIENT_SYNC_FILENAME;
+        MS_socket_address = M_MESSAGE_SERVICE_SYNC_SOCKET_ADDRESS;
+    }else{
+        cerr << "you have to set sync or async" << endl;
+        exit(1);
+    }
+    std::shared_ptr<ServerStats2> serverStats = std::make_shared<ServerStats2>(stats_path);
+    clientAsync client(grpc::CreateChannel(MS_socket_address, grpc::InsecureChannelCredentials()),
                        serverStats);
     uint64_t client_uid = generate_local_uid();
 

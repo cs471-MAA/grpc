@@ -1,6 +1,8 @@
+//
+// Created by adrien on 18.12.21.
+//
 
-
-#include "mockDatabaseAsync.h"
+#include "mockDatabase.h"
 #include "../shared/consts.h"
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/resource_quota.h>
@@ -12,11 +14,11 @@ using grpc::ServerBuilder;
 using grpc::Server;
 using namespace std;
 
-mockDatabaseImpl::mockDatabaseImpl(uint32_t meanWaitingTime,
-                                  uint32_t stdWaitingTime, std::shared_ptr<CTSL::HashMap<std::string, std::string>> hashMap):
+mockDatabaseImpl::mockDatabaseImpl(uint32_t meanWaitingTime, uint32_t stdWaitingTime, std::shared_ptr<CTSL::HashMap<std::string,
+                                   std::string>> hashMap, const std::string& log_path):
     meanWaitingTime(meanWaitingTime), 
     stdWaitingTime(stdWaitingTime),
-    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MOCK_DATABASE_ASYNC_FILENAME)),
+    serverStats(std::make_shared<ServerStats2>(log_path)),
     hashMap(std::move(hashMap)){}
 
 Status
@@ -54,10 +56,10 @@ Status mockDatabaseImpl::saveMessage(::grpc::ServerContext *context, const ::mmb
 
 void RunServer(int workerThreads,
                    uint32_t meanWaitingTime,
-                   uint32_t stdWaitingTime) {
-    std::string server_address(M_MOCK_DATABASE_SOCKET_ADDRESS);
+                   uint32_t stdWaitingTime, const std::string& stats_path) {
+    std::string server_address(M_MOCK_DATABASE_SYNC_SOCKET_ADDRESS);
     auto hashMap = std::make_shared<CTSL::HashMap<std::string, std::string>>();
-    mockDatabaseImpl service(meanWaitingTime, stdWaitingTime, hashMap);
+    mockDatabaseImpl service(meanWaitingTime, stdWaitingTime, hashMap, stats_path);
 
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -84,10 +86,21 @@ void RunServer(int workerThreads,
 
 int main(int argc, char **argv) {
     int i = 0;
+    uint32_t sync = ((argc > ++i) ? stoi(argv[i]) : -1);
     int workerThreads = (argc > ++i) ? stoi(argv[i]) : 5;
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 3000);
     uint32_t stdWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
 
-    RunServer(workerThreads, meanWaitingTime, stdWaitingTime);
+    std::string stats_path;
+    if (sync == 0){
+        stats_path = STATS_FILES_DIR MOCK_DATABASE_ASYNC_FILENAME;
+    }else if(sync == 1){
+        stats_path = STATS_FILES_DIR MOCK_DATABASE_SYNC_FILENAME;
+    }else{
+        cerr << "you have to set sync or async" << endl;
+        exit(1);
+    }
+
+    RunServer(workerThreads, meanWaitingTime, stdWaitingTime, stats_path);
     return 0;
 }
