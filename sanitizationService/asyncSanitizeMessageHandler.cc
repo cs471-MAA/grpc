@@ -72,9 +72,7 @@ asyncSanitizeMessageHandler::asyncSanitizeMessageHandler(sanitizationService::As
 }
 
 void asyncSanitizeMessageHandler::Proceed(bool ok) {
-    PRINT("received call \n");
     if (status_ == PROCESS) {
-        PRINT("query_uid: " << request_.query_uid() << '\n');
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
 
@@ -90,7 +88,6 @@ void asyncSanitizeMessageHandler::Proceed(bool ok) {
         // part of its FINISH state.
         new asyncSanitizeMessageHandler(service_, cq_, channel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
     } else {
-        PRINT("finishing.." << '\n');
         GPR_ASSERT(status_ == FINISH);
         // Once in the FINISH state, deallocate ourselves (CallData).
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
