@@ -42,7 +42,6 @@ def find_element(x, i):
 
 def treat_data(filepath, time_start=None, time_factor=1000.0, verbose=False):
     df = pd.read_csv(filepath, names=DF_NAMES, dtype=DF_TYPES)
-    print(df)
     # drop invalid queries
     df = df.loc[df["query_uid"] > 0]
     return_time_start = False
@@ -84,11 +83,6 @@ def get_actors_df(dirpath, async_data=True, time_factor=1000.0):
         msgserv_df = treat_data(dirpath + SYNC_MSGSERV_FN, time_start, time_factor=time_factor)
         sanitserv_df = treat_data(dirpath + SYNC_SANITSERV_FN, time_start, time_factor=time_factor)
         mockdata_df = treat_data(dirpath + SYNC_MOCKDATA_FN, time_start, time_factor=time_factor)
-        # print(client_df)
-        # print(msgserv_df)
-        # print(sanitserv_df)
-        # print(mockdata_df)
-        # exit()
 
     return client_df, msgserv_df, sanitserv_df, mockdata_df
 
@@ -240,9 +234,8 @@ def compare_calls_cascade(adf, sdf):
 def main(data_dirpath, async_data=True, verbose=False):
     all_async = get_data(data_dirpath, async_data=True, as_dict=False, verbose=verbose)
     all_sync = get_data(data_dirpath, async_data=False, as_dict=False, verbose=verbose)
-    print(all_sync)
-    # print({k: v.loc[~v["latency"].isnull().values] for k, v in all_sync.items()})
-    print(all_sync.loc[~all_sync["latency"].isnull().values])
+    # print(all_sync)
+    # print(all_sync.loc[~all_sync["latency"].isnull().values])
 
     # compare_calls_cascade(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
     # compare_tail_latency(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])

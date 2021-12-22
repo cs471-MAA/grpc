@@ -29,7 +29,7 @@ sanitizationServiceImpl::sanitize_message(::grpc::ServerContext *context, const 
                                           ::mmb::saveMessageReply *response) {
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
-    std::cout << "query_uid: " << request->query_uid() << std::endl;
+    PRINT("query_uid: " << request->query_uid() << '\n');
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     grpc::ClientContext clientContext;
 
@@ -41,7 +41,7 @@ sanitizationServiceImpl::sanitize_message(::grpc::ServerContext *context, const 
     auto work = fake_worker(meanWaitingTime);
     response->set_compute(work);
 
-    std::cout << "finished query_uid: " << request->query_uid() << std::endl;
+    PRINT("finished query_uid: " << request->query_uid() << '\n');
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     return result;
 }
@@ -69,7 +69,7 @@ void RunServer(int workerThreads,
     // builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::CQ_TIMEOUT_MSEC, 100000);
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on " << server_address << std::endl;
+    PRINT("Server listening on " << server_address << '\n');
 
     // Wait for the server to shutdown. Note that some other thread must be
     // responsible for shutting down the server for this call to ever return.

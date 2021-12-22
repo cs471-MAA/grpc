@@ -33,6 +33,16 @@ else()
             "The code will be compiled for docker.")
 endif()
 
+option(VERBOSE "Services will print debug info about RPCs to stdout." OFF)
+if(VERBOSE)
+    add_definitions(-DVERBOSE)
+    message(STATUS
+        "Services will be verbose.")
+else()
+    message(STATUS
+        "Services will not be verbose.")
+endif()
+
 # Proto file
 get_filename_component(hw_proto "protos/mock_message_board.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)

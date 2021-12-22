@@ -69,9 +69,9 @@ asyncFindLastMessageHandler::asyncFindLastMessageHandler(messageService::AsyncSe
 }
 
 void asyncFindLastMessageHandler::Proceed(bool ok) {
-    std::cout << "received call" << std::endl;
+    PRINT("received call" << '\n');
     if (status_ == PROCESS) {
-        std::cout << "query_uid: " << request_.query_uid() << std::endl;
+        PRINT("query_uid: " << request_.query_uid() << '\n');
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
 
         auto work = fake_worker(meanWaitingTime);
@@ -84,7 +84,7 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
         // part of its FINISH state.
         new asyncFindLastMessageHandler(service_, cq_, channel, cqClient, meanWaitingTime, stdWaitingTime, serverStats);
     } else {
-        std::cout << "finishing.." << std::endl;
+        PRINT("finishing.." << '\n');
         GPR_ASSERT(status_ == FINISH);
         serverStats->add_entry(request_.query_uid(), get_epoch_time_us());
         // Once in the FINISH state, deallocate ourselves (CallData).

@@ -32,7 +32,7 @@ messageServiceImpl::messageServiceImpl(uint32_t meanWaitingTime,
 messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb::findLastMessageRequest *request,
                                     ::mmb::findLastMessageReply *response) {
 
-    std::cout << "query_uid: " << request->query_uid() << std::endl;
+    PRINT("query_uid: " << request->query_uid() << '\n');
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
@@ -46,7 +46,7 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     auto work = fake_worker(meanWaitingTime);
     response->set_compute(work);
 
-    std::cout << "finish query_uid: " << request->query_uid() << std::endl;
+    PRINT("finish query_uid: " << request->query_uid() << '\n');
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
 
     return result;
@@ -55,7 +55,7 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
 ::grpc::Status messageServiceImpl::sendMessage(::grpc::ServerContext *context, const ::mmb::saveMessageRequest *request,
                                                ::mmb::saveMessageReply *response) {
 
-    std::cout << "query_uid: " << request->query_uid() << std::endl;
+    PRINT("query_uid: " << request->query_uid() << '\n');
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
@@ -68,7 +68,7 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
 
     auto work = fake_worker(meanWaitingTime);
     response->set_compute(work);
-    std::cout << "finish query_uid: " << request->query_uid() << std::endl;
+    PRINT("finish query_uid: " << request->query_uid() << '\n');
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
 
     return result;
@@ -99,7 +99,7 @@ void RunServer(int workerThreads,
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
 
-    std::cout << "Server listening on " << server_address << std::endl;
+    PRINT("Server listening on " << server_address << '\n');
 
     // Wait for the server to shutdown. Note that some other thread must be
     // responsible for shutting down the server for this call to ever return.
