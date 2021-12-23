@@ -129,7 +129,7 @@ def plot_trace(X1, X2, Y, color, label, w, ax):
               units="y", width=w,
               # remove arrow head
               headaxislength=0, headlength=0, headwidth=1)
-    ax.set_xlim(None, 400000)
+    #ax.set_xlim(None, 400000)
 
 
 def new_default_figure():

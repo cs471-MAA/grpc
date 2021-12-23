@@ -5,6 +5,6 @@ set -o pipefail
 # set -xv # for debug
 
 
-tc qdisc add dev eth0 root netem delay "$1"
+tc qdisc add dev eth0 root netem delay "$1" "$2" "$3%"
 
-eval "$2"
+eval "$4"

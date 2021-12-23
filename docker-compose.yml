@@ -6,7 +6,7 @@ services:
         ports:
             - "20001:20001"
         entrypoint:
-            ["/app/launcher.sh", "${OUT_NET_DELAY}ms", "taskset 1 /app/cmake/build/mockDatabase 0 ${W_MOCK} ${t_MOCK} ${s_MOCK}"]
+            ["/app/launcher.sh", "${OUT_NET_DELAY}", "${OUT_NET_DELAY_VAR}", "${OUT_NET_DELAY_CORR}", "taskset --cpu-list 7,9,11 /app/cmake/build/mockDatabase 0 ${W_MOCK} ${t_MOCK} ${s_MOCK}"]
         volumes:
           - ./container_files/${STATSDIR}/:/app/stats_files:rw
         stop_signal: SIGINT
@@ -19,7 +19,7 @@ services:
         ports:
             - "20003:20003"
         entrypoint:
-            ["/app/launcher.sh", "${OUT_NET_DELAY}ms", "taskset 3 /app/cmake/build/sanitizationServiceAsync ${W_SANIT} ${t_SANIT} ${s_SANIT}"]
+            ["/app/launcher.sh", "${OUT_NET_DELAY}", "${OUT_NET_DELAY_VAR}", "${OUT_NET_DELAY_CORR}", "taskset --cpu-list 1,2 /app/cmake/build/sanitizationServiceAsync ${W_SANIT} ${t_SANIT} ${s_SANIT}"]
         depends_on:
             - mock-database
         volumes:
@@ -34,7 +34,7 @@ services:
         ports:
             - "20002:20002"
         entrypoint:
-            ["/app/launcher.sh", "${OUT_NET_DELAY}ms", "taskset 5 /app/cmake/build/messageServiceAsync ${W_MSG} ${t_MSG} ${s_MSG}"]
+            ["/app/launcher.sh", "${OUT_NET_DELAY}", "${OUT_NET_DELAY_VAR}", "${OUT_NET_DELAY_CORR}", "taskset --cpu-list 3,4 /app/cmake/build/messageServiceAsync ${W_MSG} ${t_MSG} ${s_MSG}"]
         depends_on:
             - mock-database
             - sanitization-service
@@ -49,7 +49,7 @@ services:
         hostname: client
         # restart: always
         entrypoint:
-            ["/app/launcher.sh", "${OUT_NET_DELAY}ms", "/app/cmake/build/clientAsync 0 ${N} ${t_DELAY} ${s_DELAY} ${P} ${SEED}"]
+            ["/app/launcher.sh", "${OUT_NET_DELAY}", "${OUT_NET_DELAY_VAR}", "${OUT_NET_DELAY_CORR}", "taskset --cpu-list 5,6 /app/cmake/build/clientAsync 0 ${N} ${t_DELAY} ${s_DELAY} ${P} ${SEED}"]
         depends_on:
             - message-service
         volumes:
