@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
     // Spawn reader thread that loops indefinitely
     // only calls findmessage atm
     std::thread thread_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
-    std::thread thread2_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
+    //std::thread thread2_ = std::thread(&clientAsync::AsyncCompleteRpc, &client);
 
     for (int i = 1; i < upperBound; i++) {
         uint64_t query_uid = get_query_uid(client_uid, i);
@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Press control-c to quit" << std::endl << std::endl;
     thread_.join();  // blocks forever
-    thread2_.join();  // blocks forever
+    //thread2_.join();  // blocks forever
 
     return 0;
 }
