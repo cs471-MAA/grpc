@@ -248,12 +248,13 @@ def main(data_dirpath, async_data=True, verbose=False):
     # compare_tail_latency(all_async[list(all_async.keys())[0]], all_sync[list(all_sync.keys())[0]])
 
     compare_tail_latency(all_async, all_sync)
-    compare_calls_cascade(all_async, all_sync)
+    #compare_calls_cascade(all_async, all_sync)
 
 
 if __name__ == "__main__":
     args = parse_args()
 
     main(args.data_dir, async_data=True, verbose=True)
-
+    plt.savefig("bidule.svg", transparent=True)
+    plt.savefig("bidule.pdf", transparent=True)
     plt.show()
