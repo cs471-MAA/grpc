@@ -59,7 +59,7 @@ asyncSendMessageHandler::asyncSendMessageHandler(messageService::AsyncService *s
                                                  std::shared_ptr<ServerStats2> serverStats)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
           channel(std::move(channel)), meanWaitingTime(meanWaitingTime),
-          stdWaitingTime(stdWaitingTime), serverStats(std::move(serverStats)) {
+          stdWaitingTime(stdWaitingTime), serverStats(std::move(serverStats)), counter(0), okAcc(true) {
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
@@ -77,7 +77,11 @@ void asyncSendMessageHandler::Proceed(bool ok) {
         auto work = fake_worker(meanWaitingTime);
         request_.set_compute(work);
         auto asyncClient = new sanitizeMessage_asyncClient(channel, cqClient, this);
+        auto asyncClient2 = new sanitizeMessage_asyncClient(channel, cqClient, this);
+        auto asyncClient3 = new sanitizeMessage_asyncClient(channel, cqClient, this);
         asyncClient->sanitizeMessage(request_);
+        asyncClient2->sanitizeMessage(request_);
+        asyncClient3->sanitizeMessage(request_);
 
 
         // Spawn a new CallData instance to serve new clients while we process
@@ -92,21 +96,30 @@ void asyncSendMessageHandler::Proceed(bool ok) {
     }
 }
 
-void asyncSendMessageHandler::Finish(const saveMessageReply &reply) {
+void asyncSendMessageHandler::Finish(saveMessageReply &reply) {
+    ++counter;
+    okAcc = okAcc && reply.ok();
 
-    // And we are done! Let the gRPC runtime know we've finished, using the
-    // memory address of this instance as the uniquely identifying tag for
-    // the event.
-    status_ = FINISH;
-    // Thread safe
-    responder_.Finish(reply, Status::OK, this);
+    if(counter == 3){
+        reply.set_ok(okAcc);
+        // And we are done! Let the gRPC runtime know we've finished, using the
+        // memory address of this instance as the uniquely identifying tag for
+        // the event.
+        status_ = FINISH;
+        // Thread safe
+        responder_.Finish(reply, Status::OK, this);
+    }
 }
 
 void asyncSendMessageHandler::FinishWithError() {
+    ++counter;
     // And we are done! Let the gRPC runtime know we've finished, using the
     // memory address of this instance as the uniquely identifying tag for
     // the event.
-    status_ = FINISH;
+
     // Thread safe
-    responder_.FinishWithError(Status::CANCELLED, this);
+    if(counter == 3) {
+        status_ = FINISH;
+        responder_.FinishWithError(Status::CANCELLED, this);
+    }
 }

@@ -101,4 +101,7 @@ private:
     };
     std::atomic<CallStatus> status_;  // The current serving state.
     std::shared_ptr<ServerStats2> serverStats;
+
+    std::string messageAcc;
+    unsigned int counter;
 };

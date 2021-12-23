@@ -72,7 +72,7 @@ public:
     void Proceed(bool ok) override;
 
 private:
-    void Finish(const saveMessageReply &reply);
+    void Finish(saveMessageReply &reply);
 
     void FinishWithError();
 
@@ -102,4 +102,7 @@ private:
     };
     std::atomic<CallStatus> status_;  // The current serving state.
     std::shared_ptr<ServerStats2> serverStats;
+
+    bool okAcc;
+    unsigned int counter;
 };

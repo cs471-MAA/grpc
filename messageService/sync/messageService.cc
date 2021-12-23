@@ -35,13 +35,21 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
-    grpc::ClientContext clientContext;
 
-    findLastMessageReply response2;
-    auto result = mockDatabaseStub_->findLastMessage(&clientContext, *request, &response2);
+    grpc::ClientContext clientContext_1;
+    findLastMessageReply response2_1;
+    auto result = mockDatabaseStub_->findLastMessage(&clientContext_1, *request, &response2_1);
 
-    response->set_message(response2.message());
-    response->set_query_uid(response2.query_uid());
+    grpc::ClientContext clientContext_2;
+    findLastMessageReply response2_2;
+    auto result2 = mockDatabaseStub_->findLastMessage(&clientContext_2, *request, &response2_2);
+
+    grpc::ClientContext clientContext_3;
+    findLastMessageReply response2_3;
+    auto result3 = mockDatabaseStub_->findLastMessage(&clientContext_3, *request, &response2_3);
+
+    response->set_message(response2_1.message() + response2_2.message() + response2_3.message());
+    response->set_query_uid(response2_1.query_uid());
     auto work = fake_worker(meanWaitingTime);
     response->set_compute(work);
 
@@ -56,13 +64,20 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
-    grpc::ClientContext clientContext;
+    grpc::ClientContext clientContext_1;
+    saveMessageReply response2_1;
+    auto result = sanitizationServiceStub_->sanitize_message(&clientContext_1, *request, &response2_1);
 
-    saveMessageReply response2;
-    auto result = sanitizationServiceStub_->sanitize_message(&clientContext, *request, &response2);
-    response->set_ok(response2.ok());
-    response->set_query_uid(response2.query_uid());
+    grpc::ClientContext clientContext_2;
+    saveMessageReply response2_2;
+    auto result2 = sanitizationServiceStub_->sanitize_message(&clientContext_2, *request, &response2_2);
 
+    grpc::ClientContext clientContext_3;
+    saveMessageReply response2_3;
+    auto result3 = sanitizationServiceStub_->sanitize_message(&clientContext_3, *request, &response2_3);
+
+    response->set_query_uid(response2_1.query_uid());
+    response->set_ok(response2_1.ok() & response2_2.ok() & response2_3.ok());
     auto work = fake_worker(meanWaitingTime);
     response->set_compute(work);
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());

@@ -58,7 +58,7 @@ asyncFindLastMessageHandler::asyncFindLastMessageHandler(messageService::AsyncSe
                                                          std::shared_ptr<ServerStats2> serverStats)
         : service_(service), cq_(cq), responder_(&ctx_), status_(PROCESS), cqClient(cqClient),
           channel(std::move(channel)), meanWaitingTime(meanWaitingTime),
-          stdWaitingTime(stdWaitingTime), serverStats(std::move(serverStats)) {
+          stdWaitingTime(stdWaitingTime), serverStats(std::move(serverStats)), counter(0), messageAcc() {
 
     // As part of the initial CREATE state, we *request* that the system
     // start processing SayHello requests. In this request, "this" acts are
@@ -75,9 +75,13 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
         auto work = fake_worker(meanWaitingTime);
         request_.set_compute(work);
         auto asyncClient = new findLastMessage_asyncClient(channel, cqClient, this);
+        auto asyncClient2 = new findLastMessage_asyncClient(channel, cqClient, this);
+        auto asyncClient3 = new findLastMessage_asyncClient(channel, cqClient, this);
         asyncClient->findLastMessage(request_);
+        asyncClient2->findLastMessage(request_);
+        asyncClient3->findLastMessage(request_);
 
-        
+
         // Spawn a new CallData instance to serve new clients while we process
         // the one for this CallData. The instance will deallocate itself as
         // part of its FINISH state.
@@ -91,19 +95,30 @@ void asyncFindLastMessageHandler::Proceed(bool ok) {
 }
 
 void asyncFindLastMessageHandler::Finish(findLastMessageReply &reply) {
-    // And we are done! Let the gRPC runtime know we've finished, using the
-    // memory address of this instance as the uniquely identifying tag for
-    // the event.
-    status_ = FINISH;
-    // Thread safe
-    responder_.Finish(reply, Status::OK, this);
+    ++counter;
+    messageAcc = messageAcc + reply.message();
+
+    if(counter == 3){
+        reply.set_message(messageAcc);
+
+        // And we are done! Let the gRPC runtime know we've finished, using the
+        // memory address of this instance as the uniquely identifying tag for
+        // the event.
+        status_ = FINISH;
+        responder_.Finish(reply, Status::OK, this);
+    }
+
 }
 
 void asyncFindLastMessageHandler::FinishWithError() {
+    ++counter;
     // And we are done! Let the gRPC runtime know we've finished, using the
     // memory address of this instance as the uniquely identifying tag for
     // the event.
-    status_ = FINISH;
+
     // Thread safe
-    responder_.FinishWithError(Status::CANCELLED, this);
+    if(counter == 3){
+        status_ = FINISH;
+        responder_.FinishWithError(Status::CANCELLED, this);
+    }
 }

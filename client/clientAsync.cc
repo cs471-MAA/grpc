@@ -129,10 +129,10 @@ int main(int argc, char **argv) {
         float p = uni_dist(generator);
         if (p < findRequestProportion){
             // cout << "**FIND**" << i << "\n";
-            client.findLastMessage("admin", query_uid);  // The actual RPC call!
+            client.findLastMessage("admin" + to_string(i % 100), query_uid);  // The actual RPC call!
         } else{
             // cout << "->SEND<- " << i << "\n";
-            client.sendMessage("admin", "world " + to_string(i), query_uid);  // The actual RPC call!
+            client.sendMessage("admin" + to_string(i % 100), "world " + to_string(i), query_uid);  // The actual RPC call!
         }
         fake_worker(normal_dist(generator));
     }
