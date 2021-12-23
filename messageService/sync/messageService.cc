@@ -18,13 +18,14 @@ using mmb::saveMessageReply;
 using namespace std;
 
 messageServiceImpl::messageServiceImpl(uint32_t meanWaitingTime,
-                                       uint32_t stdWaitingTime):
-    meanWaitingTime(meanWaitingTime), 
-    stdWaitingTime(stdWaitingTime),
-    serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MESSAGE_SERVICE_SYNC_FILENAME))
-{
-    mockDatabaseStub_ = mmb::mockDatabase::NewStub(grpc::CreateChannel(M_MOCK_DATABASE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
-    sanitizationServiceStub_ = mmb::sanitizationService::NewStub(grpc::CreateChannel(M_SANITIZATION_SERVICE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
+                                       uint32_t stdWaitingTime) :
+        meanWaitingTime(meanWaitingTime),
+        stdWaitingTime(stdWaitingTime),
+        serverStats(std::make_shared<ServerStats2>(STATS_FILES_DIR MESSAGE_SERVICE_SYNC_FILENAME)) {
+    mockDatabaseStub_ = mmb::mockDatabase::NewStub(
+            grpc::CreateChannel(M_MOCK_DATABASE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
+    sanitizationServiceStub_ = mmb::sanitizationService::NewStub(
+            grpc::CreateChannel(M_SANITIZATION_SERVICE_SYNC_SOCKET_ADDRESS, grpc::InsecureChannelCredentials()));
 
 }
 
@@ -36,17 +37,28 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
 
-    grpc::ClientContext clientContext_1;
+
     findLastMessageReply response2_1;
-    auto result = mockDatabaseStub_->findLastMessage(&clientContext_1, *request, &response2_1);
+    grpc::Status result;
+    auto thread1 = std::thread([&]() {
+        grpc::ClientContext clientContext_1;
+        auto result = mockDatabaseStub_->findLastMessage(&clientContext_1, *request, &response2_1);
+    });
 
-    grpc::ClientContext clientContext_2;
     findLastMessageReply response2_2;
-    auto result2 = mockDatabaseStub_->findLastMessage(&clientContext_2, *request, &response2_2);
+    auto thread2 = std::thread([&]() {
+        grpc::ClientContext clientContext_2;
+        auto result2 = mockDatabaseStub_->findLastMessage(&clientContext_2, *request, &response2_2);
+    });
 
-    grpc::ClientContext clientContext_3;
     findLastMessageReply response2_3;
-    auto result3 = mockDatabaseStub_->findLastMessage(&clientContext_3, *request, &response2_3);
+    auto thread3 = std::thread([&]() {
+        grpc::ClientContext clientContext_3;
+        auto result3 = mockDatabaseStub_->findLastMessage(&clientContext_3, *request, &response2_3);
+    });
+    thread1.join();
+    thread2.join();
+    thread3.join();
 
     response->set_message(response2_1.message() + response2_2.message() + response2_3.message());
     response->set_query_uid(response2_1.query_uid());
@@ -64,17 +76,28 @@ messageServiceImpl::findLastMessage(::grpc::ServerContext *context, const ::mmb:
     serverStats->add_entry(request->query_uid(), get_epoch_time_us());
     // Context for the client. It could be used to convey extra information to
     // the server and/or tweak certain RPC behaviors.
-    grpc::ClientContext clientContext_1;
+
     saveMessageReply response2_1;
-    auto result = sanitizationServiceStub_->sanitize_message(&clientContext_1, *request, &response2_1);
+    grpc::Status result;
+    auto thread1 = std::thread([&]() {
+        grpc::ClientContext clientContext_1;
+        result = sanitizationServiceStub_->sanitize_message(&clientContext_1, *request, &response2_1);
+    });
 
-    grpc::ClientContext clientContext_2;
     saveMessageReply response2_2;
-    auto result2 = sanitizationServiceStub_->sanitize_message(&clientContext_2, *request, &response2_2);
+    auto thread2 = std::thread([&]() {
+        grpc::ClientContext clientContext_2;
+        sanitizationServiceStub_->sanitize_message(&clientContext_2, *request, &response2_2);
+    });
 
-    grpc::ClientContext clientContext_3;
     saveMessageReply response2_3;
-    auto result3 = sanitizationServiceStub_->sanitize_message(&clientContext_3, *request, &response2_3);
+    auto thread3 = std::thread([&]() {
+        grpc::ClientContext clientContext_3;
+        sanitizationServiceStub_->sanitize_message(&clientContext_3, *request, &response2_3);
+    });
+    thread1.join();
+    thread2.join();
+    thread3.join();
 
     response->set_query_uid(response2_1.query_uid());
     response->set_ok(response2_1.ok() & response2_2.ok() & response2_3.ok());
@@ -109,7 +132,7 @@ void RunServer(int workerThreads,
     // Finally assemble the server
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-    
+
     std::cout << "Server listening on " << server_address << std::endl;
 
     // Wait for the server to shutdown. Note that some other thread must be
@@ -117,7 +140,7 @@ void RunServer(int workerThreads,
     server->Wait();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     int i = 0;
     int workerThreads = (argc > ++i) ? stoi(argv[i]) : 5;
     uint32_t meanWaitingTime = ((argc > ++i) ? stoi(argv[i]) : 1000);
